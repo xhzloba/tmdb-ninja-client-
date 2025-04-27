@@ -13,15 +13,34 @@ export { MediaItem } from "./entities/MediaItem";
 export { Movie } from "./entities/Movie";
 export { TVShow } from "./entities/TVShow";
 
-// Экспортируем важные типы и интерфейсы
+// Экспортируем типы пагинации и опций из сервиса
 export type {
   PaginatedMediaResult,
   PaginatedMovieResult,
   PaginatedTVShowResult,
-  // Можно добавить другие типы/интерфейсы, которые могут быть полезны пользователю
-  // BaseMedia, MovieMedia, TVShowMedia, // Экспортировать ли сырые типы API - вопрос
-} from "./services/MediaService"; // PaginatedMediaResult экспортируется из сервиса
+  MediaDetailsOptions,
+} from "./services/MediaService";
 
+// Экспортируем типы сущностей и деталей из types
+export type {
+  Genre,
+  ProductionCompany,
+  ProductionCountry,
+  SpokenLanguage,
+  ReleaseDate,
+  CountryReleaseDates,
+  ReleaseDatesResponse,
+  Keyword,
+  KeywordsResponse,
+  AlternativeTitle,
+  AlternativeTitlesResponse,
+  Episode,
+  Season,
+  ContentRating,
+  ContentRatingsResponse,
+} from "./types";
+
+// Экспортируем класс ошибки
 export { ApiError } from "./core/ApiClient";
 
 // --- Фабричная функция для создания клиента ---
@@ -33,12 +52,20 @@ const DEFAULT_API_URL = "https://tmdb.kurwa-bober.ninja/";
  * Это рекомендуемый способ инициализации библиотеки.
  *
  * @param baseURL - Необязательный параметр. Базовый URL API. По умолчанию используется 'https://tmdb.kurwa-bober.ninja/'.
+ * @param apiKey - API ключ для доступа к API.
  * @returns Объект, содержащий готовые к использованию сервисы (например, `media`).
  */
-export function createNinjaClient(baseURL: string = DEFAULT_API_URL) {
+export function createNinjaClient(
+  baseURL: string = DEFAULT_API_URL,
+  apiKey: string
+) {
   // Комментарий для "себя": Внутреннее создание зависимостей.
   // Пользователю не нужно знать про ApiClient.
-  const apiClient = new ApiClient(baseURL);
+  // Проверяем, что ключ не пустой
+  if (!apiKey) {
+    throw new Error("API key must be provided to createNinjaClient.");
+  }
+  const apiClient = new ApiClient(baseURL, apiKey);
   return {
     /**
      * Сервис для работы с фильмами и сериалами.

@@ -4,6 +4,8 @@ import {
   MediaItemResponse,
   isMovieMedia,
   isTVShowMedia,
+  MovieMedia,
+  TVShowMedia,
 } from "../types";
 import { Movie, TVShow } from "../entities";
 
@@ -35,6 +37,14 @@ export interface PaginatedMediaResult {
   page: number;
   totalPages: number;
   totalResults: number;
+}
+
+/**
+ * Опции для запроса деталей медиа.
+ */
+export interface MediaDetailsOptions {
+  language?: string;
+  appendToResponse?: string[]; // Массив строк для append_to_response
 }
 
 /**
@@ -287,8 +297,76 @@ export class MediaService {
     }
   }
 
+  /**
+   * Получает детальную информацию о фильме по его ID.
+   * @param movieId - ID фильма.
+   * @param options - Опциональные параметры запроса (language, appendToResponse).
+   * @returns Промис, который разрешается экземпляром Movie с детальной информацией.
+   * @throws {ApiError} В случае ошибки API.
+   */
+  async getMovieDetails(
+    movieId: number,
+    options?: MediaDetailsOptions
+  ): Promise<Movie> {
+    const endpoint = `3/movie/${movieId}`; // Путь к API v3
+    const params: Record<string, string | number> = {};
+
+    if (options?.language) {
+      params.language = options.language;
+    }
+    if (options?.appendToResponse && options.appendToResponse.length > 0) {
+      params.append_to_response = options.appendToResponse.join(",");
+    }
+
+    try {
+      // Запрашиваем ДЕТАЛИ фильма, ожидаем тип MovieMedia
+      const movieData = await this.#apiClient.get<MovieMedia>(endpoint, params);
+      // Создаем экземпляр Movie из полученных данных
+      return new Movie(movieData);
+    } catch (error) {
+      console.error(`Error fetching details for movie ID ${movieId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Получает детальную информацию о сериале по его ID.
+   * @param tvShowId - ID сериала.
+   * @param options - Опциональные параметры запроса (language, appendToResponse).
+   * @returns Промис, который разрешается экземпляром TVShow с детальной информацией.
+   * @throws {ApiError} В случае ошибки API.
+   */
+  async getTVShowDetails(
+    tvShowId: number,
+    options?: MediaDetailsOptions
+  ): Promise<TVShow> {
+    const endpoint = `3/tv/${tvShowId}`; // Путь к API v3 для сериалов
+    const params: Record<string, string | number> = {};
+
+    if (options?.language) {
+      params.language = options.language;
+    }
+    if (options?.appendToResponse && options.appendToResponse.length > 0) {
+      params.append_to_response = options.appendToResponse.join(",");
+    }
+
+    try {
+      // Запрашиваем ДЕТАЛИ сериала, ожидаем тип TVShowMedia
+      const tvShowData = await this.#apiClient.get<TVShowMedia>(
+        endpoint,
+        params
+      );
+      // Создаем экземпляр TVShow из полученных данных
+      return new TVShow(tvShowData);
+    } catch (error) {
+      console.error(
+        `Error fetching details for TV show ID ${tvShowId}:`,
+        error
+      );
+      throw error;
+    }
+  }
+
   // Комментарий для "себя": Здесь можно добавить другие методы:
   // async searchMedia(query: string, page: number = 1): Promise<PaginatedMediaResult> { ... }
-  // async getMovieDetails(movieId: number): Promise<Movie> { ... }
-  // async getTVShowDetails(tvShowId: number): Promise<TVShow> { ... }
 }

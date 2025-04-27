@@ -1,4 +1,14 @@
-import { BaseMedia } from "../types";
+import {
+  BaseMedia,
+  DetailedMediaBase,
+  Genre,
+  ProductionCompany,
+  ProductionCountry,
+  SpokenLanguage,
+  ReleaseDatesResponse,
+  KeywordsResponse,
+  AlternativeTitlesResponse,
+} from "../types";
 import { ImageConfig } from "../config";
 
 /**
@@ -28,11 +38,22 @@ export abstract class MediaItem {
   readonly #status: string;
   readonly #lastAirDate?: string; // Заметь, это поле есть и у фильмов в твоем API
 
+  // --- Новые детальные поля (опциональные) ---
+  readonly #genres?: Genre[];
+  readonly #homepage?: string | null;
+  readonly #productionCompanies?: ProductionCompany[];
+  readonly #productionCountries?: ProductionCountry[];
+  readonly #spokenLanguages?: SpokenLanguage[];
+  readonly #tagline?: string | null;
+  readonly #releaseDates?: ReleaseDatesResponse;
+  readonly #keywords?: KeywordsResponse;
+  readonly #alternativeTitles?: AlternativeTitlesResponse;
+
   /**
    * Защищенный конструктор, вызывается из дочерних классов.
-   * @param data - Данные из API типа BaseMedia.
+   * @param data - Данные из API (могут быть BaseMedia или расширенные MovieMedia/TVShowMedia).
    */
-  protected constructor(data: BaseMedia) {
+  protected constructor(data: BaseMedia & Partial<DetailedMediaBase>) {
     // Комментарий для "себя": Прямое присваивание данных из API.
     // Можно добавить валидацию или трансформацию при необходимости.
     this.#id = data.id;
@@ -54,6 +75,17 @@ export abstract class MediaItem {
     this.#imdbRating = data.imdb_rating;
     this.#status = data.status;
     this.#lastAirDate = data.last_air_date;
+
+    // Присваивание новых детальных полей (если они есть в data)
+    this.#genres = data.genres;
+    this.#homepage = data.homepage;
+    this.#productionCompanies = data.production_companies;
+    this.#productionCountries = data.production_countries;
+    this.#spokenLanguages = data.spoken_languages;
+    this.#tagline = data.tagline;
+    this.#releaseDates = data.release_dates;
+    this.#keywords = data.keywords;
+    this.#alternativeTitles = data.alternative_titles;
   }
 
   // --- Геттеры для доступа к приватным полям ---
@@ -114,6 +146,40 @@ export abstract class MediaItem {
   }
   get lastAirDate(): string | undefined {
     return this.#lastAirDate;
+  }
+
+  // --- Геттеры для новых детальных полей ---
+  get genres(): Genre[] | undefined {
+    // Возвращаем копию для предотвращения мутаций
+    return this.#genres ? [...this.#genres] : undefined;
+  }
+  get homepage(): string | null | undefined {
+    return this.#homepage;
+  }
+  get productionCompanies(): ProductionCompany[] | undefined {
+    return this.#productionCompanies
+      ? [...this.#productionCompanies]
+      : undefined;
+  }
+  get productionCountries(): ProductionCountry[] | undefined {
+    return this.#productionCountries
+      ? [...this.#productionCountries]
+      : undefined;
+  }
+  get spokenLanguages(): SpokenLanguage[] | undefined {
+    return this.#spokenLanguages ? [...this.#spokenLanguages] : undefined;
+  }
+  get tagline(): string | null | undefined {
+    return this.#tagline;
+  }
+  get releaseDates(): ReleaseDatesResponse | undefined {
+    return this.#releaseDates;
+  } // Можно сделать deep copy, если нужна полная иммутабельность
+  get keywords(): KeywordsResponse | undefined {
+    return this.#keywords;
+  }
+  get alternativeTitles(): AlternativeTitlesResponse | undefined {
+    return this.#alternativeTitles;
   }
 
   /**

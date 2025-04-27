@@ -1,215 +1,271 @@
-# Ninja TMDB API Client
+# Документация Ninja TMDB Client
 
-Простая и типизированная клиентская библиотека на TypeScript для взаимодействия с прокси-API TMDB (`https://tmdb.kurwa-bober.ninja/`). Построена с использованием классов и инкапсуляции.
+Эта библиотека предоставляет удобный интерфейс для взаимодействия с твоим прокси TMDB API (`tmdb.kurwa-bober.ninja`).
 
 ## Установка
 
-**1. Через NPM (рекомендуется, после публикации):**
-
 ```bash
-npm install tmdb-ninja-client
+npm install <имя-твоего-пакета>
 # или
-yarn add tmdb-ninja-client
+yarn add <имя-твоего-пакета>
 ```
 
-**2. Напрямую из Git-репозитория (например, GitHub):**
+_(Замени `<имя-твоего-пакета>` на реальное имя)_
 
-```bash
-# Замените <юзернейм> и <репозиторий>
-npm install git+https://github.com/<юзернейм>/<репозиторий>.git
-# Или указав ветку/тег:
-npm install <юзернейм>/<репозиторий>#<ветка-или-тег>
+## Начало Работы
 
-# Пример с Yarn:
-yarn add <юзернейм>/<репозиторий>#<ветка-или-тег>
-```
-
-_При установке из Git, сборка проекта (`npm run build`) запустится автоматически._
-
-**3. Из локальной папки (для локальной разработки):**
-
-- Сначала убедитесь, что библиотека собрана (выполните `npm run build` в папке библиотеки).
-- Затем в вашем проекте выполните:
-
-```bash
-# Замените /path/to/apimovies на реальный путь к папке библиотеки
-npm install /path/to/apimovies
-
-# Пример с Yarn:
-yarn add file:/path/to/apimovies
-```
-
-## Быстрый старт
-
-Основной способ использования библиотеки - через фабричную функцию `createNinjaClient`.
+Основной способ использования библиотеки — через фабричную функцию `createNinjaClient`.
 
 ```typescript
-import {
-  createNinjaClient,
-  ImageConfig,
-  ApiError,
-  Movie,
-  TVShow,
-} from "tmdb-ninja-client";
+import { createNinjaClient, ApiError } from "<имя-твоего-пакета>";
 
-// --- Конфигурация (необязательно) ---
+const API_KEY = "YOUR_TMDB_API_KEY"; // Твой API ключ
+const BASE_URL = "https://tmdb.kurwa-bober.ninja/"; // URL твоего прокси
 
-// 1. Установка своего базового URL для API (если отличается от дефолтного)
-// const client = createNinjaClient('https://my-custom-api-proxy.com/');
+// Создаем клиент
+const client = createNinjaClient(BASE_URL, API_KEY);
 
-// 2. Установка своего базового URL для изображений (если отличается от дефолтного)
-// ImageConfig.setBaseUrl('https://my-custom-image-proxy.com/t/p/');
-
-// --- Использование ---
-
-// Создаем клиент (с URL API по умолчанию)
-const client = createNinjaClient();
-
-async function fetchAndLogMedia() {
+async function fetchMovies() {
   try {
-    // Получаем первую страницу фильмов "Сейчас смотрят"
-    const nowPlayingMovies = await client.media.getNowPlayingMovies(1);
+    // Получаем популярные фильмы (первая страница)
+    const popularMovies = await client.media.getPopularMovies(1);
 
+    console.log(`Всего найдено: ${popularMovies.totalResults}`);
+
+    popularMovies.items.forEach((movie) => {
+      console.log(`- ${movie.title} (${movie.releaseDate?.substring(0, 4)})`);
+      // Получаем URL постера определенного размера
+      console.log(`  Постер (w342): ${movie.getPosterUrl("w342")}`);
+    });
+
+    // Получаем детали конкретного фильма (Бэтмен)
+    const batmanDetails = await client.media.getMovieDetails(414906, {
+      language: "ru",
+      appendToResponse: ["credits", "videos"], // Запрашиваем доп. данные
+    });
+
+    console.log(`\nДетали фильма: ${batmanDetails.title}`);
+    console.log(`Слоган: ${batmanDetails.tagline || "Нет"}`);
     console.log(
-      `Loaded ${nowPlayingMovies.items.length} movies (Page ${nowPlayingMovies.page}/${nowPlayingMovies.totalPages}, Total: ${nowPlayingMovies.totalResults})`
+      `Режиссеры: ${batmanDetails
+        .getDirectors()
+        .map((d) => d.name)
+        .join(", ")}`
     );
-
-    nowPlayingMovies.items.forEach((movie) => {
-      // movie является экземпляром класса Movie
-      console.log(`\n[${movie.id}] ${movie.title} (${movie.releaseDate})`);
-      console.log(`  Rating: ${movie.voteAverage} (${movie.voteCount} votes)`);
-      console.log(`  Overview: ${movie.overview.substring(0, 100)}...`);
-
-      // Получаем URL постера (размер по умолчанию 'w500')
-      const poster = movie.getPosterUrl();
-      // Получаем URL постера другого размера
-      const smallPoster = movie.getPosterUrl("w185");
-      console.log(`  Poster (w185): ${smallPoster}`);
-
-      // Получаем URL бэкдропа (размер по умолчанию 'original')
-      const backdrop = movie.getBackdropUrl();
-      console.log(`  Backdrop: ${backdrop}`);
-    });
-
-    // Получаем первую страницу смешанного контента (фильмы и сериалы) "Сейчас смотрят"
-    const nowPlayingMixed = await client.media.getNowPlaying(1);
-    console.log("\n--- Mixed Now Playing ---");
-    nowPlayingMixed.items.forEach((item) => {
-      if (item instanceof Movie) {
-        console.log(` [Movie] ${item.title}`);
-      } else if (item instanceof TVShow) {
-        console.log(` [TV Show] ${item.name}`);
-      }
-    });
+    console.log(
+      `Трейлер (YouTube): ${
+        batmanDetails.videos?.results?.find(
+          (v) => v.site === "YouTube" && v.type === "Trailer"
+        )?.key || "Не найден"
+      }`
+    );
   } catch (error) {
     if (error instanceof ApiError) {
-      // Обработка ошибок API
       console.error(
-        `API Error (${error.statusCode || "N/A"}): ${error.message}`
+        `Ошибка API (${error.statusCode || "N/A"}): ${error.message}`
       );
       if (error.apiMessage) {
-        console.error(`  -> Server message: ${error.apiMessage}`);
+        console.error(`  Сообщение от сервера: ${error.apiMessage}`);
       }
     } else {
-      // Обработка других ошибок (например, сетевых)
-      console.error("An unexpected error occurred:", error);
+      console.error("Произошла неожиданная ошибка:", error);
     }
   }
 }
 
-fetchAndLogMedia();
+fetchMovies();
 ```
 
-## API
+## Конфигурация
 
-### Фабричная функция `createNinjaClient`
+#### `createNinjaClient(baseURL: string, apiKey: string)`
+
+- `baseURL`: (Обязательный) Базовый URL твоего прокси API.
+- `apiKey`: (Обязательный) Твой API ключ для доступа к TMDB (или к твоему прокси, если он требует ключ).
+- **Возвращает**: Объект клиента, содержащий сервисы (сейчас только `media`).
+
+#### `ImageConfig`
+
+Статический класс для настройки базового URL и размеров изображений (постеров, фонов).
+
+- `ImageConfig.setBaseUrl(url: string)`: Устанавливает базовый URL для CDN изображений (по умолчанию используется стандартный URL TMDB).
+- `ImageConfig.getAvailablePosterSizes()`: Возвращает массив доступных размеров постеров (строки типа 'w92', 'w154', ...).
+- `ImageConfig.getAvailableBackdropSizes()`: Возвращает массив доступных размеров фонов.
+- `ImageConfig.getAvailableLogoSizes()`: Возвращает массив доступных размеров логотипов.
+- `ImageConfig.getAvailableProfileSizes()`: Возвращает массив доступных размеров аватаров/профилей.
+
+## Сервис Медиа (`client.media`)
+
+Предоставляет методы для получения информации о фильмах и сериалах.
+
+- **`getPopularMovies(page: number): Promise<PaginatedMovieResult>`**
+
+  - Получает список популярных фильмов.
+  - `page`: Номер страницы (начиная с 1).
+  - Возвращает `PaginatedMovieResult`, содержащий:
+    - `items`: Массив экземпляров класса `Movie`.
+    - `page`, `totalPages`, `totalResults`: Информация о пагинации.
+
+- **`getNowPlaying(page: number): Promise<PaginatedMediaResult>`**
+
+  - Получает список фильмов и сериалов, которые сейчас актуальны (например, "Сейчас смотрят"). Возвращает фильмы и сериалы.
+  - `page`: Номер страницы (начиная с 1).
+  - Возвращает `PaginatedMediaResult`, содержащий:
+    - `items`: Массив экземпляров `Movie` или `TVShow`.
+    - `page`, `totalPages`, `totalResults`.
+
+- **`getMovieDetails(movieId: number, options?: MediaDetailsOptions): Promise<Movie>`**
+
+  - Получает детальную информацию о фильме.
+  - `movieId`: ID фильма в TMDB.
+  - `options`: Необязательный объект с параметрами:
+    - `language`: Строка языка (например, 'ru', 'en-US').
+    - `appendToResponse`: Массив строк для запроса дополнительных данных (см. ниже).
+  - Возвращает экземпляр класса `Movie` со всеми доступными полями.
+
+  **Пример использования `appendToResponse`:**
+
+  ```typescript
+  const movieWithOptions = await client.media.getMovieDetails(movieId, {
+    language: "ru",
+    // Запрашиваем только кредиты и видео
+    appendToResponse: ["credits", "videos"],
+  });
+  // Теперь movieWithOptions.credits и movieWithOptions.videos будут доступны
+  console.log(movieWithOptions.getDirectors());
+  ```
+
+- **`getTVShowDetails(tvShowId: number, options?: MediaDetailsOptions): Promise<TVShow>`**
+
+  - Получает детальную информацию о сериале.
+  - `tvShowId`: ID сериала в TMDB.
+  - `options`: Аналогичны `getMovieDetails`.
+  - Возвращает экземпляр класса `TVShow` со всеми доступными полями.
+
+  **Пример использования `appendToResponse`:**
+
+  ```typescript
+  const tvShowWithOptions = await client.media.getTVShowDetails(tvShowId, {
+    language: "en-US",
+    // Запрашиваем внешние ID и ключевые слова
+    appendToResponse: ["external_ids", "keywords"],
+  });
+  // Теперь tvShowWithOptions.externalIds и tvShowWithOptions.keywords будут доступны
+  console.log(tvShowWithOptions.externalIds?.imdb_id);
+  ```
+
+- **`MediaDetailsOptions` (Тип)**
+  - `language?: string`
+  - `appendToResponse?: string[]`: Позволяет добавить связанные данные к основному ответу одним запросом. Возможные значения включают:
+    - `'keywords'`
+    - `'alternative_titles'`
+    - `'content_ratings'`
+    - `'release_dates'` (для фильмов)
+    - `'credits'` (актеры и съемочная группа)
+    - `'videos'` (трейлеры, тизеры и т.д.)
+    - `'external_ids'` (ID на других платформах: IMDb, Wikidata и т.д.)
+    - `'watch/providers'` (где посмотреть онлайн)
+    - `'recommendations'` (рекомендуемые фильмы/сериалы)
+    - `'similar'` (похожие фильмы/сериалы)
+    - `'reviews'` (обзоры пользователей)
+    - `'images'` (дополнительные постеры, фоны, логотипы)
+
+## Сущности Медиа (`Movie`, `TVShow`)
+
+Экземпляры этих классов возвращаются методами сервиса. Они предоставляют удобный доступ к данным через геттеры и методы.
+
+#### Общие Поля и Методы (для `Movie` и `TVShow` из `MediaItem`)
+
+- `id: number`: Уникальный ID TMDB.
+- `overview: string`: Краткое описание.
+- `popularity: number`: Показатель популярности.
+- `voteAverage: number`: Средний рейтинг (0-10).
+- `voteCount: number`: Количество голосов.
+- `posterPath: string | null`: Путь к файлу постера (без базового URL).
+- `backdropPath: string | null`: Путь к файлу фона (без базового URL).
+- `adult: boolean`: Является ли контент для взрослых.
+- `originalLanguage: string`: Оригинальный язык (код, например 'en').
+- `status: string`: Текущий статус ('Released', 'Returning Series', 'Ended' и т.д.).
+- `getPosterUrl(size: string = 'w500'): string | null`: Возвращает полный URL постера указанного размера (например, 'w185', 'w342', 'w500', 'original'). Размеры можно получить из `ImageConfig`.
+- `getBackdropUrl(size: string = 'w780'): string | null`: Возвращает полный URL фона указанного размера (например, 'w300', 'w780', 'w1280', 'original').
+- `names`, `PG`, `release_quality`, `kinopoisk_id`, `kp_rating`, `imdb_id`, `imdb_rating`, `last_air_date` (доступны через соответствующие геттеры).
+
+#### Специфичные Поля `Movie`
+
+- `title: string`: Название фильма (локализованное, если запрошено).
+- `originalTitle: string`: Оригинальное название фильма.
+- `releaseDate: string`: Дата релиза (строка 'YYYY-MM-DD').
+- `video: boolean`: Связан ли с фильмом видеофайл (обычно для трейлеров на TMDB).
+- `belongsToCollection: object | null | undefined`: Информация о коллекции, к которой принадлежит фильм (если есть).
+- `budget: number | undefined`: Бюджет фильма (если известен).
+- `revenue: number | undefined`: Сборы фильма (если известны).
+- `runtime: number | null | undefined`: Продолжительность в минутах.
+- `tagline: string | null | undefined`: Слоган фильма.
+
+#### Специфичные Методы `Movie`
+
+- `getDirectors(): CrewMember[]`: Возвращает массив режиссеров (требует `'credits'` в `appendToResponse`).
+- `getCast(): CastMember[]`: Возвращает массив актеров (требует `'credits'` в `appendToResponse`).
+
+#### Специфичные Поля `TVShow`
+
+- `name: string`: Название сериала (локализованное).
+- `originalName: string`: Оригинальное название сериала.
+- `firstAirDate: string`: Дата выхода первого эпизода ('YYYY-MM-DD').
+- `originCountry: string[]`: Массив кодов стран-производителей.
+- `numberOfEpisodes: number | undefined`: Общее количество эпизодов.
+- `numberOfSeasons: number | undefined`: Общее количество сезонов.
+- `inProduction: boolean | undefined`: Находится ли сериал еще в производстве.
+- `languages: string[] | undefined`: Массив кодов языков сериала.
+- `lastEpisodeToAir: Episode | null | undefined`: Объект с информацией о последнем вышедшем эпизоде.
+- `nextEpisodeToAir: Episode | null | undefined`: Объект с информацией о следующем эпизоде (если анонсирован).
+- `networks: ProductionCompany[] | undefined`: Массив телеканалов/сетей, где выходил сериал.
+- `type: string | undefined`: Тип сериала ('Scripted', 'Reality' и т.д.).
+- `seasons: Season[] | undefined`: Массив объектов с информацией о сезонах (ID, название, дата выхода, количество эпизодов и т.д.).
+- `createdBy: CastMember[] | undefined`: Массив создателей сериала.
+- `episodeRunTime: number[] | undefined`: Массив с возможными длительностями эпизодов в минутах.
+
+#### Поля из `appendToResponse` (Доступны через геттеры на `Movie` и `TVShow`, если запрошены)
+
+- `genres: Genre[] | undefined`: Массив объектов жанров.
+- `productionCompanies: ProductionCompany[] | undefined`: Массив компаний-производителей.
+- `productionCountries: ProductionCountry[] | undefined`: Массив стран-производителей.
+- `spokenLanguages: SpokenLanguage[] | undefined`: Массив языков озвучки.
+- `keywords: KeywordsResponse | undefined`: Объект с массивом ключевых слов (`keywords.keywords`).
+- `alternativeTitles: AlternativeTitlesResponse | undefined`: Объект с массивом альтернативных названий для разных стран (`alternativeTitles.titles`).
+- `contentRatings: ContentRatingsResponse | undefined`: Объект с массивом возрастных рейтингов для разных стран (`contentRatings.results`).
+- `releaseDates: ReleaseDatesResponse | undefined`: (Только для `Movie`) Объект с массивом дат релиза и сертификаций для разных стран (`releaseDates.results`).
+- `credits: CreditsResponse | undefined`: Объект с массивами актеров (`credits.cast`) и съемочной группы (`credits.crew`).
+- `videos: VideosResponse | undefined`: Объект с массивом видео (`videos.results`), включая трейлеры, тизеры и т.д. Содержит ключи для YouTube/Vimeo.
+- `externalIds: ExternalIdsResponse | undefined`: Объект с ID на внешних ресурсах (`externalIds.imdb_id`, `externalIds.wikidata_id` и т.д.).
+- `watchProviders: WatchProviderResponse | undefined`: Объект с информацией о доступности на стриминговых платформах по странам (`watchProviders.results['RU']`, `watchProviders.results['US']` и т.д.). Содержит ссылки и списки сервисов для подписки (`flatrate`), аренды (`rent`) и покупки (`buy`).
+- `recommendations: RecommendationsResponse | undefined`: Объект с пагинированным списком рекомендуемых фильмов/сериалов (`recommendations.results`).
+- `similar: SimilarResponse | undefined`: Объект с пагинированным списком похожих фильмов/сериалов (`similar.results`).
+- `reviews: ReviewsResponse | undefined`: Объект с пагинированным списком обзоров пользователей (`reviews.results`).
+- `images: ImagesResponse | undefined`: Объект с дополнительными массивами постеров (`images.posters`), фонов (`images.backdrops`) и логотипов (`images.logos`).
+
+## Обработка Ошибок
+
+Библиотека использует кастомный класс ошибки `ApiError`.
+
+- `message: string`: Общее сообщение об ошибке (например, "Network request failed", "API request failed...").
+- `statusCode?: number`: HTTP статус-код ответа, если ошибка произошла на стороне API (4xx, 5xx).
+- `apiMessage?: string`: Сообщение об ошибке, извлеченное из тела ответа API (если доступно).
+
+Используйте `try...catch` и проверяйте `instanceof ApiError` для корректной обработки.
 
 ```typescript
-createNinjaClient(baseURL?: string): { media: MediaService /*, ... potentially others */ }
+try {
+  // ... вызов метода API ...
+} catch (error) {
+  if (error instanceof ApiError) {
+    // Обработка ошибки API
+  } else {
+    // Обработка других ошибок
+  }
+}
 ```
 
-- **Назначение:** Основной способ инициализации библиотеки.
-- **Параметры:**
-  - `baseURL` (опционально, `string`): Базовый URL API. По умолчанию: `https://tmdb.kurwa-bober.ninja/`.
-- **Возвращает:** Объект с инстансами сервисов. На данный момент содержит только `media`.
+## Экспортируемые Типы
 
-### Сервис `client.media` (Экземпляр `MediaService`)
-
-Этот сервис отвечает за получение списков фильмов и сериалов.
-
-- **`getPopular(page?: number): Promise<PaginatedMediaResult>`**
-
-  - **Назначение:** Получает смешанный список популярных фильмов и сериалов (сортировка API 'top').
-  - **Параметры:** `page` (опционально, `number`, по умолчанию `1`) - номер запрашиваемой страницы.
-  - **Возвращает:** `Promise`, который разрешается объектом `PaginatedMediaResult` (содержит `items: (Movie | TVShow)[]`, `page`, `totalPages`, `totalResults`).
-
-- **`getPopularMovies(page?: number): Promise<PaginatedMovieResult>`**
-
-  - **Назначение:** Получает список **только** популярных фильмов (сортировка API 'top').
-  - **Параметры:** `page` (опционально, `number`, по умолчанию `1`).
-  - **Возвращает:** `Promise`, который разрешается объектом `PaginatedMovieResult` (содержит `items: Movie[]`, `page`, `totalPages`, `totalResults`).
-
-- **`getPopularTVShows(page?: number): Promise<PaginatedTVShowResult>`**
-
-  - **Назначение:** Получает список **только** популярных сериалов (сортировка API 'top').
-  - **Параметры:** `page` (опционально, `number`, по умолчанию `1`).
-  - **Возвращает:** `Promise`, который разрешается объектом `PaginatedTVShowResult` (содержит `items: TVShow[]`, `page`, `totalPages`, `totalResults`).
-
-- **`getNowPlaying(page?: number): Promise<PaginatedMediaResult>`**
-
-  - **Назначение:** Получает смешанный список фильмов и сериалов, которые "сейчас смотрят" (сортировка API 'now_playing').
-  - **Параметры:** `page` (опционально, `number`, по умолчанию `1`).
-  - **Возвращает:** `Promise`, который разрешается объектом `PaginatedMediaResult`.
-
-- **`getNowPlayingMovies(page?: number): Promise<PaginatedMovieResult>`**
-  - **Назначение:** Получает список **только** фильмов, которые "сейчас смотрят" (сортировка API 'now_playing').
-  - **Параметры:** `page` (опционально, `number`, по умолчанию `1`).
-  - **Возвращает:** `Promise`, который разрешается объектом `PaginatedMovieResult`.
-
-_\_(В будущем здесь могут появиться другие методы: поиск, получение деталей и т.д.)_\_
-
-### Методы сущностей (`movie` или `tvShow`)
-
-Экземпляры классов `Movie` и `TVShow`, которые возвращаются методами `client.media`, имеют следующие общие методы для получения URL изображений:
-
-- **`getPosterUrl(size?: string): string | null`**
-
-  - **Назначение:** Формирует полный URL для постера фильма или сериала.
-  - **Параметры:** `size` (опционально, `string`). Строка, определяющая размер изображения (например, `'w92'`, `'w154'`, `'w185'`, `'w342'`, `'w500'`, `'w780'`, `'original'`). Список доступных размеров можно найти в документации TMDB. По умолчанию: `'w500'`.
-  - **Возвращает:** Полный URL изображения (`string`) или `null`, если путь к постеру отсутствует в данных API.
-
-- **`getBackdropUrl(size?: string): string | null`**
-  - **Назначение:** Формирует полный URL для фонового изображения (backdrop).
-  - **Параметры:** `size` (опционально, `string`). Строка, определяющая размер изображения (например, `'w300'`, `'w780'`, `'w1280'`, `'original'`). По умолчанию: `'original'`.
-  - **Возвращает:** Полный URL изображения (`string`) или `null`, если путь к фону отсутствует.
-
-_Помимо этих методов, у экземпляров `Movie` и `TVShow` есть геттеры для доступа ко всем полям, полученным из API (например, `movie.title`, `movie.voteAverage`, `tvShow.name`, `tvShow.numberOfSeasons`, и т.д.)._
-
-### Конфигурация `ImageConfig`
-
-Статический класс для настройки базового URL изображений.
-
-- **`ImageConfig.setBaseUrl(newUrl: string): void`**
-  - **Назначение:** Устанавливает новый глобальный базовый URL, который будет использоваться методами `getPosterUrl` и `getBackdropUrl`. Вызывать один раз при инициализации приложения, если стандартный URL (`https://imagetmdb.com/t/p/`) не подходит.
-  - **Параметры:** `newUrl` (`string`) - новый базовый URL (должен заканчиваться на `/`).
-
-### Типы
-
-- **`PaginatedMediaResult`**: `{ items: (Movie | TVShow)[], page: number, totalPages: number, totalResults: number }` - Результат для смешанных списков.
-- **`PaginatedMovieResult`**: `{ items: Movie[], page: number, totalPages: number, totalResults: number }` - Результат для списков фильмов.
-- **`PaginatedTVShowResult`**: `{ items: TVShow[], page: number, totalPages: number, totalResults: number }` - Результат для списков сериалов.
-- **`Movie`**: Класс, представляющий фильм.
-- **`TVShow`**: Класс, представляющий сериал.
-- **`ApiError`**: Класс ошибки API.
-
-### Ошибки (`ApiError`)
-
-- **Назначение:** Класс ошибки, выбрасываемый методами `MediaService` при неудачном запросе к API.
-- **Свойства:**
-  - `message` (`string`): Общее сообщение об ошибке.
-  - `statusCode` (`number` | `undefined`): HTTP статус код ответа (если доступен).
-  - `apiMessage` (`string` | `undefined`): Сообщение об ошибке из тела ответа API (если доступно).
-
-## Сборка
-
-_При установке из Git, сборка проекта (`npm run build`) запустится автоматически._
+Библиотека также экспортирует большинство интерфейсов TypeScript, описывающих структуры данных (например, `Genre`, `CastMember`, `CrewMember`, `Video`, `Episode`, `Season`, `PaginatedMovieResult`, `MovieMedia` и т.д.), чтобы вы могли использовать их для типизации в своем коде.

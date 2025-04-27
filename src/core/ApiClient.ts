@@ -25,17 +25,25 @@ export class ApiError extends Error {
 export class ApiClient {
   // Базовый URL API - приватное свойство, недоступное извне
   #baseURL: string;
+  // API ключ - приватное свойство
+  #apiKey: string;
 
   /**
    * Создает экземпляр ApiClient.
    * @param baseURL - Базовый URL API, к которому будут выполняться запросы.
+   * @param apiKey - API ключ для доступа к API.
    */
-  constructor(baseURL: string) {
+  constructor(baseURL: string, apiKey: string) {
     // Проверяем, что URL не пустой
     if (!baseURL) {
       throw new Error("Base URL cannot be empty.");
     }
+    // Проверяем, что ключ не пустой
+    if (!apiKey) {
+      throw new Error("API key cannot be empty.");
+    }
     this.#baseURL = baseURL;
+    this.#apiKey = apiKey; // Сохраняем ключ
     // Комментарий для "себя": Убедиться, что baseURL всегда заканчивается на слеш
     // для корректного соединения с путями эндпоинтов.
     if (!this.#baseURL.endsWith("/")) {
@@ -56,10 +64,18 @@ export class ApiClient {
     params?: Record<string, string | number>
   ): Promise<T> {
     const url = new URL(endpoint, this.#baseURL);
+
+    // Всегда добавляем API ключ
+    url.searchParams.append("api_key", this.#apiKey);
+
+    // Добавляем остальные параметры, если они есть
     if (params) {
       Object.entries(params).forEach(
         ([key, value]: [string, string | number]) => {
-          url.searchParams.append(key, String(value));
+          // Избегаем дублирования api_key, если он вдруг передан в params
+          if (key.toLowerCase() !== "api_key") {
+            url.searchParams.append(key, String(value));
+          }
         }
       );
     }
@@ -67,6 +83,9 @@ export class ApiClient {
     // Комментарий для "себя": Используем fetch. Можно добавить опции,
     // типа заголовков (Authorization и т.д.), если API потребует.
     try {
+      // --->>> DEBUGGING: Log the exact URL being fetched
+      console.log(`[ApiClient] Fetching URL: ${url.toString()}`);
+      // --->>> END DEBUGGING
       const response = await fetch(url.toString());
 
       if (!response.ok) {

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vanilla JS TMDB Client</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 0 15px;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+      li {
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #eee;
+      }
+      li img {
+        width: 100px;
+        height: auto;
+        float: left;
+        margin-right: 15px;
+      }
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      .status {
+        margin-top: 20px;
+        font-style: italic;
+      }
+      .error {
+        color: red;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Популярные фильмы (Vanilla JS Пример)</h1>
+
+    <ul id="movie-list"></ul>
+
+    <div id="status-messages" class="status"></div>
+
+    <button id="load-more-btn" style="display: none">Загрузить еще</button>
+
+    <!-- 
+        Подключаем UMD бандл, который содержит всю библиотеку.
+        Путь указан абсолютно от корня сервера (если сервер запущен из корня проекта).
+    -->
+    <script src="/dist/tmdb-ninja-client.umd.js"></script>
+    <!-- Подключаем сам скрипт примера ПОСЛЕ библиотеки -->
+    <script src="vanilla-js-example.js"></script>
+  </body>
+</html>
