@@ -122,47 +122,94 @@ fetchAndLogMedia();
 
 ## API
 
-### `createNinjaClient(baseURL?: string)`
+### Фабричная функция `createNinjaClient`
 
-- Фабричная функция для создания экземпляра клиента.
-- `baseURL` (опционально): Строка с базовым URL API. По умолчанию `https://tmdb.kurwa-bober.ninja/`.
-- Возвращает объект:
-  - `media`: Экземпляр `MediaService` для работы с фильмами и сериалами.
+```typescript
+createNinjaClient(baseURL?: string): { media: MediaService /*, ... potentially others */ }
+```
 
-### `client.media` (Экземпляр `MediaService`)
+- **Назначение:** Основной способ инициализации библиотеки.
+- **Параметры:**
+  - `baseURL` (опционально, `string`): Базовый URL API. По умолчанию: `https://tmdb.kurwa-bober.ninja/`.
+- **Возвращает:** Объект с инстансами сервисов. На данный момент содержит только `media`.
 
-- `getNowPlaying(page?: number): Promise<PaginatedMediaResult>`: Получает смешанный список фильмов и сериалов ("Сейчас смотрят") с пагинацией.
-- `getNowPlayingMovies(page?: number): Promise<PaginatedMovieResult>`: Получает список только фильмов ("Сейчас смотрят") с пагинацией.
-- `getPopular(page?: number): Promise<PaginatedMediaResult>`: Получает смешанный список популярных фильмов и сериалов (сортировка API 'top'), с пагинацией.
-- `getPopularMovies(page?: number): Promise<PaginatedMovieResult>`: Получает список только популярных фильмов (сортировка API 'top'), с пагинацией.
-- `getPopularTVShows(page?: number): Promise<PaginatedTVShowResult>`: Получает список только популярных сериалов (сортировка API 'top'), с пагинацией.
-- _(В будущем здесь могут появиться другие методы: `search`, `getDetails` и т.д.)_
+### Сервис `client.media` (Экземпляр `MediaService`)
 
-### `ImageConfig`
+Этот сервис отвечает за получение списков фильмов и сериалов.
 
-- `setBaseUrl(baseUrl: string)`: Устанавливает базовый URL для изображений.
+- **`getPopular(page?: number): Promise<PaginatedMediaResult>`**
+
+  - **Назначение:** Получает смешанный список популярных фильмов и сериалов (сортировка API 'top').
+  - **Параметры:** `page` (опционально, `number`, по умолчанию `1`) - номер запрашиваемой страницы.
+  - **Возвращает:** `Promise`, который разрешается объектом `PaginatedMediaResult` (содержит `items: (Movie | TVShow)[]`, `page`, `totalPages`, `totalResults`).
+
+- **`getPopularMovies(page?: number): Promise<PaginatedMovieResult>`**
+
+  - **Назначение:** Получает список **только** популярных фильмов (сортировка API 'top').
+  - **Параметры:** `page` (опционально, `number`, по умолчанию `1`).
+  - **Возвращает:** `Promise`, который разрешается объектом `PaginatedMovieResult` (содержит `items: Movie[]`, `page`, `totalPages`, `totalResults`).
+
+- **`getPopularTVShows(page?: number): Promise<PaginatedTVShowResult>`**
+
+  - **Назначение:** Получает список **только** популярных сериалов (сортировка API 'top').
+  - **Параметры:** `page` (опционально, `number`, по умолчанию `1`).
+  - **Возвращает:** `Promise`, который разрешается объектом `PaginatedTVShowResult` (содержит `items: TVShow[]`, `page`, `totalPages`, `totalResults`).
+
+- **`getNowPlaying(page?: number): Promise<PaginatedMediaResult>`**
+
+  - **Назначение:** Получает смешанный список фильмов и сериалов, которые "сейчас смотрят" (сортировка API 'now_playing').
+  - **Параметры:** `page` (опционально, `number`, по умолчанию `1`).
+  - **Возвращает:** `Promise`, который разрешается объектом `PaginatedMediaResult`.
+
+- **`getNowPlayingMovies(page?: number): Promise<PaginatedMovieResult>`**
+  - **Назначение:** Получает список **только** фильмов, которые "сейчас смотрят" (сортировка API 'now_playing').
+  - **Параметры:** `page` (опционально, `number`, по умолчанию `1`).
+  - **Возвращает:** `Promise`, который разрешается объектом `PaginatedMovieResult`.
+
+_\_(В будущем здесь могут появиться другие методы: поиск, получение деталей и т.д.)_\_
+
+### Методы сущностей (`movie` или `tvShow`)
+
+Экземпляры классов `Movie` и `TVShow`, которые возвращаются методами `client.media`, имеют следующие общие методы для получения URL изображений:
+
+- **`getPosterUrl(size?: string): string | null`**
+
+  - **Назначение:** Формирует полный URL для постера фильма или сериала.
+  - **Параметры:** `size` (опционально, `string`). Строка, определяющая размер изображения (например, `'w92'`, `'w154'`, `'w185'`, `'w342'`, `'w500'`, `'w780'`, `'original'`). Список доступных размеров можно найти в документации TMDB. По умолчанию: `'w500'`.
+  - **Возвращает:** Полный URL изображения (`string`) или `null`, если путь к постеру отсутствует в данных API.
+
+- **`getBackdropUrl(size?: string): string | null`**
+  - **Назначение:** Формирует полный URL для фонового изображения (backdrop).
+  - **Параметры:** `size` (опционально, `string`). Строка, определяющая размер изображения (например, `'w300'`, `'w780'`, `'w1280'`, `'original'`). По умолчанию: `'original'`.
+  - **Возвращает:** Полный URL изображения (`string`) или `null`, если путь к фону отсутствует.
+
+_Помимо этих методов, у экземпляров `Movie` и `TVShow` есть геттеры для доступа ко всем полям, полученным из API (например, `movie.title`, `movie.voteAverage`, `tvShow.name`, `tvShow.numberOfSeasons`, и т.д.)._
+
+### Конфигурация `ImageConfig`
+
+Статический класс для настройки базового URL изображений.
+
+- **`ImageConfig.setBaseUrl(newUrl: string): void`**
+  - **Назначение:** Устанавливает новый глобальный базовый URL, который будет использоваться методами `getPosterUrl` и `getBackdropUrl`. Вызывать один раз при инициализации приложения, если стандартный URL (`https://imagetmdb.com/t/p/`) не подходит.
+  - **Параметры:** `newUrl` (`string`) - новый базовый URL (должен заканчиваться на `/`).
 
 ### Типы
 
-- `PaginatedMediaResult`: Интерфейс для ответа с пагинацией (смешанный контент).
-  - `items: (Movie | TVShow)[]`
-  - `page: number`
-  - `totalPages: number`
-  - `totalResults: number`
-- `PaginatedMovieResult`: Интерфейс для ответа с пагинацией (только фильмы).
-  - `items: Movie[]`
-  - `page: number`
-  - `totalPages: number`
-  - `totalResults: number`
-- `PaginatedTVShowResult`: Интерфейс для ответа с пагинацией (только сериалы).
-  - `items: TVShow[]`
-  - `page: number`
-  - `totalPages: number`
-  - `totalResults: number`
+- **`PaginatedMediaResult`**: `{ items: (Movie | TVShow)[], page: number, totalPages: number, totalResults: number }` - Результат для смешанных списков.
+- **`PaginatedMovieResult`**: `{ items: Movie[], page: number, totalPages: number, totalResults: number }` - Результат для списков фильмов.
+- **`PaginatedTVShowResult`**: `{ items: TVShow[], page: number, totalPages: number, totalResults: number }` - Результат для списков сериалов.
+- **`Movie`**: Класс, представляющий фильм.
+- **`TVShow`**: Класс, представляющий сериал.
+- **`ApiError`**: Класс ошибки API.
 
-### Ошибки
+### Ошибки (`ApiError`)
 
-- `ApiError`: Класс для обработки ошибок API.
-  - `statusCode?: number`: Код статуса ответа API.
-  - `message: string`: Сообщение об ошибке.
-  - `apiMessage?: string`: Сообщение от сервера (если доступно).
+- **Назначение:** Класс ошибки, выбрасываемый методами `MediaService` при неудачном запросе к API.
+- **Свойства:**
+  - `message` (`string`): Общее сообщение об ошибке.
+  - `statusCode` (`number` | `undefined`): HTTP статус код ответа (если доступен).
+  - `apiMessage` (`string` | `undefined`): Сообщение об ошибке из тела ответа API (если доступно).
+
+## Сборка
+
+_При установке из Git, сборка проекта (`npm run build`) запустится автоматически._
