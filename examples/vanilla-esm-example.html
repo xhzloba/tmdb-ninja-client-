@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vanilla JS + ESM TMDB Client (TV Shows)</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 0 15px;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+      li {
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid #eee;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+      li:hover {
+        background-color: #f0f0f0;
+      }
+      img {
+        width: 40px;
+        height: auto;
+        vertical-align: middle;
+        margin-right: 10px;
+      }
+      .status {
+        margin-top: 20px;
+        font-style: italic;
+      }
+      .error {
+        color: red;
+        font-weight: bold;
+      }
+      .details {
+        background-color: #f0f0f0;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 20px;
+        min-height: 50px;
+        word-wrap: break-word;
+      }
+      .details pre {
+        background-color: #eee;
+        padding: 10px;
+        border-radius: 3px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-size: 13px;
+      }
+      hr {
+        margin: 30px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Популярные Сериалы (Vanilla JS + ESM Пример)</h1>
+
+    <ul id="tv-list"></ul>
+    <div id="status-messages" class="status"></div>
+    <!-- Кнопка "Загрузить еще" здесь не реализована для простоты -->
+
+    <hr />
+
+    <h2>Детали Сериала:</h2>
+    <div id="details-container" class="details">
+      <p><i>Кликните на сериал в списке выше, чтобы увидеть детали.</i></p>
+    </div>
+
+    <!--
+      Подключаем наш скрипт как МОДУЛЬ.
+      Внутри него мы будем импортировать библиотеку из CDN (unpkg).
+    -->
+    <script type="module">
+      // Импортируем НЕОБХОДИМЫЕ части библиотеки из ESM бандла на unpkg
+      // Важно: Замени @latest на конкретную версию в реальном использовании!
+      import {
+        createXhZlobaClient,
+        ApiError,
+        Movie,
+        TVShow,
+        ImageConfig,
+      } from "https://unpkg.com/tmdb-xhzloba@latest/dist/index.esm.js";
+
+      // --- Конфигурация и Инициализация ---
+      const API_KEY = "4ef0d7355d9ffb5151e987764708ce96"; // ВАЖНО: Используйте свой ключ!
+      // BASE_URL не нужен, используется значение по умолчанию из библиотеки
+      // const BASE_URL = "https://tmdb.kurwa-bober.ninja/";
+      const client = createXhZlobaClient(API_KEY);
+
+      // --- Получение элементов DOM ---
+      const tvListElement = document.getElementById("tv-list");
+      const statusMessagesElement = document.getElementById("status-messages");
+      const detailsContainerElement =
+        document.getElementById("details-container");
+
+      // --- Хелперы ---
+      function showStatus(message, isError = false) {
+        if (!statusMessagesElement) return;
+        statusMessagesElement.textContent = message;
+        statusMessagesElement.className = isError ? "status error" : "status";
+      }
+
+      function showDetailsStatus(message, isError = false) {
+        if (!detailsContainerElement) return;
+        detailsContainerElement.innerHTML = `<p class="${
+          isError ? "error" : "status"
+        }"><i>${message}</i></p>`;
+      }
+
+      // --- Загрузка и отображение списка СЕРИАЛОВ ---
+      async function fetchAndDisplayTvShows() {
+        showStatus("Загрузка списка сериалов...");
+        try {
+          // Используем getPopularTVShows из MediaService
+          // Замени client.media.getPopularMovies на метод для сериалов, если он есть,
+          // или используй getPopular и фильтруй. Пока используем getNowPlaying для смешанного списка.
+          // ПРИМЕЧАНИЕ: В библиотеке нет getPopularTVShows, используем getNowPlaying
+          const result = await client.media.getNowPlaying(1); // Загружаем 1 страницу now playing
+
+          if (tvListElement) {
+            tvListElement.innerHTML = ""; // Очищаем
+            result.items.forEach((item) => {
+              // Проверяем, что это сериал перед добавлением в список
+              if (item instanceof TVShow) {
+                const li = document.createElement("li");
+                li.setAttribute("data-tv-id", String(item.id)); // Атрибут для клика
+                const posterUrl = item.getPosterUrl("w92") || "";
+                li.innerHTML = `
+                        <img src="${posterUrl}" alt="" onerror="this.style.display='none'">
+                        ${item.name} (${
+                  item.firstAirDate?.substring(0, 4) || "N/A"
+                })
+                    `;
+                tvListElement.appendChild(li);
+              }
+            });
+          }
+          showStatus(""); // Очищаем статус
+        } catch (error) {
+          console.error("Ошибка загрузки списка:", error);
+          let msg = "Неизвестная ошибка списка";
+          if (error instanceof ApiError) {
+            msg = `API Ошибка списка: ${error.message}`;
+          } else if (error instanceof Error) {
+            msg = `Ошибка списка: ${error.message}`;
+          }
+          showStatus(msg, true);
+        }
+      }
+
+      // --- Загрузка и отображение ДЕТАЛЕЙ СЕРИАЛА ---
+      let isDetailsLoading = false;
+      async function displayTvShowDetails(tvId) {
+        if (isDetailsLoading || !detailsContainerElement) return;
+        isDetailsLoading = true;
+        showDetailsStatus("Загрузка деталей сериала...");
+
+        try {
+          const allAppendToResponse = [
+            "keywords",
+            "alternative_titles",
+            "content_ratings",
+            "credits",
+            "videos",
+            "external_ids",
+            "watch/providers",
+            "recommendations",
+            "similar",
+            "reviews",
+            "images",
+            // Специфичные для TV можно добавить, если API поддерживает
+            // "aggregate_credits", "episode_groups"
+          ];
+          const tvDetails = await client.media.getTVShowDetails(tvId, {
+            language: "ru",
+            appendToResponse: allAppendToResponse,
+          });
+
+          console.log("Детали сериала получены:", tvDetails);
+
+          // Отображаем детали как JSON
+          detailsContainerElement.innerHTML = `                  <h3>${
+            tvDetails.name
+          }</h3>
+                  <pre>${JSON.stringify(tvDetails, null, 2)}</pre>
+              `;
+        } catch (error) {
+          console.error("Ошибка загрузки деталей сериала:", error);
+          let msg = "Неизвестная ошибка деталей";
+          if (error instanceof ApiError) {
+            msg = `API Ошибка деталей: ${error.message}`;
+          } else if (error instanceof Error) {
+            msg = `Ошибка деталей: ${error.message}`;
+          }
+          showDetailsStatus(msg, true);
+        } finally {
+          isDetailsLoading = false;
+        }
+      }
+
+      // --- Обработчик клика на список ---
+      if (tvListElement) {
+        tvListElement.addEventListener("click", (event) => {
+          const clickedLi = event.target.closest("li[data-tv-id]");
+          if (clickedLi) {
+            const tvId = clickedLi.getAttribute("data-tv-id");
+            if (tvId) {
+              displayTvShowDetails(parseInt(tvId, 10));
+            }
+          }
+        });
+      }
+
+      // --- Запуск ---
+      fetchAndDisplayTvShows();
+    </script>
+  </body>
+</html>

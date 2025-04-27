@@ -8,15 +8,17 @@ if (!window.tmdbXhzloba) {
   console.error("Библиотека tmdbXhzloba не загружена!");
   setStatus("Ошибка: Библиотека не загружена!");
 } else {
-  // Получаем доступ к функциям через новое имя
-  const { createXhZlobaClient, ApiError, ImageConfig } = window.tmdbXhzloba;
+  // Получаем доступ к функциям И КЛАССАМ через новое имя
+  const { createXhZlobaClient, ApiError, ImageConfig, Movie, TVShow } =
+    window.tmdbXhzloba;
 
   // --- Конфигурация и Инициализация ---
   const API_KEY = "4ef0d7355d9ffb5151e987764708ce96"; // ВАЖНО: Используйте свой ключ!
-  const BASE_URL = "https://tmdb.kurwa-bober.ninja/";
+  // BASE_URL теперь не нужен, используется значение по умолчанию из библиотеки
+  // const BASE_URL = "https://tmdb.kurwa-bober.ninja/";
 
-  // Используем переименованную функцию для создания клиента
-  const client = createXhZlobaClient(BASE_URL, API_KEY);
+  // Используем переименованную функцию для создания клиента БЕЗ BASE_URL
+  const client = createXhZlobaClient(API_KEY);
 
   // Получаем ссылки на DOM-элементы
   const movieListElement = document.getElementById("movie-list");
@@ -25,6 +27,7 @@ if (!window.tmdbXhzloba) {
   const detailsContainerElement = document.getElementById("details-container"); // Получаем контейнер деталей
 
   // Переменные для отслеживания состояния пагинации и загрузки
+  let mediaList = []; // Объявляем массив для хранения загруженных данных (без типа TS)
   let currentPage = 0; // Начнем с 0, чтобы первый вызов был для page=1
   let totalPages = 0;
   let isLoading = false;
@@ -67,12 +70,23 @@ if (!window.tmdbXhzloba) {
   // --- Обработчик клика на список фильмов ---
   if (movieListElement) {
     movieListElement.addEventListener("click", (event) => {
-      // Ищем родительский LI элемент, на который кликнули
       const clickedLi = event.target.closest("li[data-movie-id]");
       if (clickedLi) {
-        const movieId = clickedLi.getAttribute("data-movie-id");
-        if (movieId) {
-          displayMovieDetails(parseInt(movieId, 10));
+        const movieIdStr = clickedLi.getAttribute("data-movie-id");
+        if (movieIdStr) {
+          const movieId = parseInt(movieIdStr, 10);
+          // Находим объект фильма в текущем загруженном списке
+          const listItemData = mediaList.find((item) => item.id === movieId);
+          if (listItemData instanceof Movie) {
+            // Убедимся, что это Movie
+            displayMovieDetails(listItemData); // Передаем весь объект
+          } else {
+            console.warn("Clicked item not found or not a Movie in mediaList");
+            // Можно показать сообщение об ошибке пользователю
+            if (detailsContainerElement)
+              detailsContainerElement.innerHTML =
+                '<p class="error">Не удалось найти данные для этого элемента.</p>';
+          }
         }
       }
     });
@@ -89,11 +103,12 @@ if (!window.tmdbXhzloba) {
     try {
       const result = await client.media.getPopularMovies(page);
 
-      // Добавляем фильмы в список
+      // Добавляем фильмы в список DOM и в массив данных
       result.items.forEach((movie) => {
         if (movieListElement) {
           movieListElement.appendChild(createMovieElement(movie));
         }
+        mediaList.push(movie); // Добавляем объект в массив
       });
 
       // Обновляем состояние пагинации
@@ -198,8 +213,13 @@ if (!window.tmdbXhzloba) {
     return html;
   }
 
-  async function displayMovieDetails(movieId) {
+  async function displayMovieDetails(listItemData) {
     if (isDetailsLoading || !detailsContainerElement) return;
+
+    // Сохраняем releaseQuality из данных списка
+    const qualityFromList = listItemData.releaseQuality;
+    const movieId = listItemData.id; // Берем ID из данных списка
+
     isDetailsLoading = true;
     detailsContainerElement.innerHTML = "<p><i>Загрузка деталей...</i></p>";
 
@@ -225,6 +245,15 @@ if (!window.tmdbXhzloba) {
       });
 
       console.log("Детали фильма получены:", movieDetails);
+
+      // DEBUG: Проверяем значение releaseQuality
+      console.log(
+        "[DEBUG] movieDetails.releaseQuality:",
+        movieDetails.releaseQuality
+      );
+
+      // Проверка releaseQuality, которое пришло из списка
+      console.log("[DEBUG] qualityFromList:", qualityFromList);
 
       // --- Формируем подробный HTML ---
       let detailsHtml = `<h3>${movieDetails.title} (${movieDetails.originalTitle})</h3>`;
@@ -261,6 +290,9 @@ if (!window.tmdbXhzloba) {
       }</li>`;
       detailsHtml += `<li><strong>Продолжительность:</strong> ${
         movieDetails.runtime ? movieDetails.runtime + " мин." : "N/A"
+      }</li>`;
+      detailsHtml += `<li><strong>Качество релиза:</strong> ${
+        qualityFromList || "N/A"
       }</li>`;
       detailsHtml += `<li><strong>Жанры:</strong> ${
         movieDetails.genres?.map((g) => g.name).join(", ") || "N/A"
