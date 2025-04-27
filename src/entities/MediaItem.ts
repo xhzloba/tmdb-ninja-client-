@@ -171,8 +171,9 @@ export abstract class MediaItem {
     return this.#voteCount;
   }
   get names(): string[] {
-    return [...this.#names];
-  } // Возвращаем копию
+    // Проверяем, что #names - это массив, прежде чем копировать
+    return Array.isArray(this.#names) ? [...this.#names] : [];
+  } // Возвращаем копию или пустой массив
   get pgRating(): number {
     return this.#pgRating;
   }
@@ -199,25 +200,27 @@ export abstract class MediaItem {
   }
 
   // --- Геттеры для новых детальных полей ---
-  get genres(): Genre[] | undefined {
-    // Возвращаем копию для предотвращения мутаций
-    return this.#genres ? [...this.#genres] : undefined;
+  get genres(): Genre[] {
+    // Возвращаем копию для предотвращения мутаций или пустой массив
+    return Array.isArray(this.#genres) ? [...this.#genres] : [];
   }
   get homepage(): string | null | undefined {
     return this.#homepage;
   }
-  get productionCompanies(): ProductionCompany[] | undefined {
-    return this.#productionCompanies
+  get productionCompanies(): ProductionCompany[] {
+    return Array.isArray(this.#productionCompanies)
       ? [...this.#productionCompanies]
-      : undefined;
+      : [];
   }
-  get productionCountries(): ProductionCountry[] | undefined {
-    return this.#productionCountries
+  get productionCountries(): ProductionCountry[] {
+    return Array.isArray(this.#productionCountries)
       ? [...this.#productionCountries]
-      : undefined;
+      : [];
   }
-  get spokenLanguages(): SpokenLanguage[] | undefined {
-    return this.#spokenLanguages ? [...this.#spokenLanguages] : undefined;
+  get spokenLanguages(): SpokenLanguage[] {
+    return Array.isArray(this.#spokenLanguages)
+      ? [...this.#spokenLanguages]
+      : [];
   }
   get tagline(): string | null | undefined {
     return this.#tagline;

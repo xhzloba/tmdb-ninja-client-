@@ -75,32 +75,24 @@ export class TVShow extends MediaItem {
     return this.#firstAirDate;
   }
   get originCountry(): string[] {
-    return [...this.#originCountry];
-  } // Возвращаем копию
+    return Array.isArray(this.#originCountry) ? [...this.#originCountry] : [];
+  }
 
   // --- Геттеры для новых детальных полей сериала ---
-  get createdBy():
-    | {
-        id: number;
-        credit_id: string;
-        name: string;
-        gender: number;
-        profile_path: string | null;
-      }[]
-    | undefined {
-    return this.#createdBy ? [...this.#createdBy] : undefined;
+  get createdBy(): Exclude<TVShowMedia["created_by"], undefined> {
+    return Array.isArray(this.#createdBy) ? [...this.#createdBy] : [];
   }
-  get episodeRunTime(): number[] | undefined {
-    return this.#episodeRunTime ? [...this.#episodeRunTime] : undefined;
+  get episodeRunTime(): number[] {
+    return Array.isArray(this.#episodeRunTime) ? [...this.#episodeRunTime] : [];
   }
   get inProduction(): boolean | undefined {
     return this.#inProduction;
   }
-  get languages(): string[] | undefined {
-    return this.#languages;
+  get languages(): string[] {
+    return Array.isArray(this.#languages) ? [...this.#languages] : [];
   }
-  get networks(): ProductionCompany[] | undefined {
-    return this.#networks ? [...this.#networks] : undefined;
+  get networks(): ProductionCompany[] {
+    return Array.isArray(this.#networks) ? [...this.#networks] : [];
   }
   get numberOfEpisodes(): number | undefined {
     return this.#numberOfEpisodes;
@@ -119,8 +111,8 @@ export class TVShow extends MediaItem {
   get nextEpisodeToAir(): Episode | null | undefined {
     return this.#nextEpisodeToAir;
   }
-  get seasons(): Season[] | undefined {
-    return this.#seasons ? [...this.#seasons] : undefined;
+  get seasons(): Season[] {
+    return Array.isArray(this.#seasons) ? [...this.#seasons] : [];
   }
   get contentRatings(): ContentRatingsResponse | undefined {
     return this.#contentRatings;
