@@ -2,6 +2,7 @@
 const typescript = require("@rollup/plugin-typescript");
 const resolve = require("@rollup/plugin-node-resolve").default; // .default может быть нужен для resolve
 const commonjs = require("@rollup/plugin-commonjs");
+const replace = require("@rollup/plugin-replace");
 // Убираем импорт с assert
 // import pkg from "./package.json" assert { type: "json" };
 
@@ -41,6 +42,12 @@ module.exports = {
     },
   ],
   plugins: [
+    replace({
+      preventAssignment: true,
+      values: {
+        "process.env.PACKAGE_VERSION": JSON.stringify(pkg.version),
+      },
+    }),
     resolve(), // Позволяет Rollup находить модули в node_modules
     commonjs(), // Конвертирует CommonJS модули в ES6
     typescript({

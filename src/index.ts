@@ -66,6 +66,19 @@ export function createXhZlobaClient(
     throw new Error("API key must be provided to createNinjaClient.");
   }
   const apiClient = new ApiClient(baseURL, apiKey);
+
+  // Выводим сообщение в консоль
+  console.log(
+    `%c tmdb-xhzloba %c v${
+      process.env.PACKAGE_VERSION || "dev"
+    } %c by xhzloba %c->%c https://www.npmjs.com/package/tmdb-xhzloba`,
+    "background: #023047; color: #ffb703; padding: 3px; border-radius: 3px 0 0 3px; font-weight: bold;", // Стиль для названия
+    "background: #ffb703; color: #023047; padding: 3px; border-radius: 0 3px 3px 0; font-weight: bold;", // Стиль для версии
+    "background: #8ecae6; color: #023047; padding: 3px; border-radius: 3px; margin-left: 5px; font-weight: bold;", // Стиль для автора
+    "color: #fb8500; font-weight: bold; margin-left: 5px;", // Стиль для стрелочки
+    "color: #219ebc; text-decoration: underline; font-weight: bold;" // Стиль для ссылки
+  );
+
   return {
     /**
      * Сервис для работы с фильмами и сериалами.
