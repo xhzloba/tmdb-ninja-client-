@@ -367,6 +367,44 @@ export class MediaService {
     }
   }
 
+  /**
+   * Получает список последних добавленных фильмов и сериалов.
+   * @param page Номер страницы для пагинации (по умолчанию 1).
+   * @returns Промис с пагинированным списком фильмов и сериалов.
+   */
+  async getLatest(page: number = 1): Promise<PaginatedMediaResult> {
+    // Используем корневой путь "/", как и для popular/now_playing,
+    // но с параметром sort=latest
+    const endpoint = "";
+    const params = {
+      sort: "latest",
+      page: page,
+    };
+
+    try {
+      const response = await this.#apiClient.get<MediaListResponse>(
+        endpoint,
+        params
+      );
+
+      // Комментарий для "себя": Маппим сырые данные в наши классы сущностей,
+      // используя приватный фабричный метод. Фильтруем null значения.
+      const items = response.results
+        .map(this.#createMediaItem)
+        .filter((item): item is Movie | TVShow => item !== null);
+
+      return {
+        items: items,
+        page: response.page,
+        totalPages: response.total_pages,
+        totalResults: response.total_results,
+      };
+    } catch (error) {
+      console.error(`Error fetching latest media (page ${page}):`, error);
+      throw error;
+    }
+  }
+
   // Комментарий для "себя": Здесь можно добавить другие методы:
   // async searchMedia(query: string, page: number = 1): Promise<PaginatedMediaResult> { ... }
 }
