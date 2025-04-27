@@ -15,7 +15,7 @@ const pkg = JSON.parse(
 );
 
 // Имя глобальной переменной для UMD сборки
-const umdName = "tmdbNinjaClient";
+const umdName = "tmdbXhzloba";
 
 // Используем module.exports вместо export default
 module.exports = {

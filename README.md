@@ -5,19 +5,17 @@
 ## Установка
 
 ```bash
-npm install <имя-твоего-пакета>
+npm install tmdb-xhzloba
 # или
-yarn add <имя-твоего-пакета>
+yarn add tmdb-xhzloba
 ```
-
-_(Замени `<имя-твоего-пакета>` на реальное имя)_
 
 ## Начало Работы
 
 Основной способ использования библиотеки — через фабричную функцию `createNinjaClient`.
 
 ```typescript
-import { createNinjaClient, ApiError } from "<имя-твоего-пакета>";
+import { createNinjaClient, ApiError } from "tmdb-xhzloba";
 
 const API_KEY = "YOUR_TMDB_API_KEY"; // Твой API ключ
 const BASE_URL = "https://tmdb.kurwa-bober.ninja/"; // URL твоего прокси
