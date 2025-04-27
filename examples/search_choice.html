@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Выбор типа поиска</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      label {
+        margin-right: 10px;
+      }
+      button {
+        margin-top: 15px;
+        padding: 8px 15px;
+      }
+      pre {
+        background-color: #f4f4f4;
+        border: 1px solid #ddd;
+        padding: 10px;
+        white-space: pre-wrap; /* Перенос длинных строк */
+        word-wrap: break-word; /* Перенос слов */
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Что ищем?</h1>
+
+    <form id="search-type-form">
+      <input type="radio" id="movie" name="search_type" value="movie" checked />
+      <label for="movie">Фильм</label><br />
+
+      <input type="radio" id="tv" name="search_type" value="tv" />
+      <label for="tv">Сериал</label><br />
+
+      <input
+        type="text"
+        id="search-query"
+        placeholder="Введите название..."
+        required
+        style="margin-top: 10px; padding: 8px; width: 200px"
+      />
+      <br />
+
+      <button type="submit">Искать</button>
+    </form>
+
+    <div id="results" style="margin-top: 20px">
+      <!-- Результаты поиска будут здесь -->
+    </div>
+
+    <script type="module">
+      // Импортируем фабричную функцию и нужные типы/классы
+      import {
+        createXhZlobaClient,
+        ApiError,
+        Movie,
+        TVShow,
+      } from "https://unpkg.com/tmdb-xhzloba@latest/dist/index.esm.js";
+
+      // --- ВАЖНО: Замените на ваш реальный ключ API! ---
+      // Нужен только ключ API (v3) для работы с прокси через createXhZlobaClient
+      const API_KEY = "4ef0d7355d9ffb5151e987764708ce96"; // V3 Key
+      // const ACCESS_TOKEN = "YOUR_TMDB_ACCESS_TOKEN"; // V4 Access Token - не используется фабрикой по умолчанию
+      // -----------------------------------------------
+
+      let client;
+      const resultsDiv = document.getElementById("results");
+      const searchButton = document.querySelector(
+        '#search-type-form button[type="submit"]'
+      );
+      const searchInput = document.getElementById("search-query");
+
+      try {
+        // Используем фабричную функцию, как рекомендовано в README
+        // Передаем undefined для baseURL (чтобы использовать дефолтный) и ключ API вторым аргументом
+        client = createXhZlobaClient(undefined, API_KEY);
+        console.log(
+          "Клиент XhZloba инициализирован через фабрику с API ключом."
+        );
+
+        // Проверка ключа API
+        if (!API_KEY || API_KEY === "YOUR_TMDB_API_KEY") {
+          // Оставляем предупреждение, если ключ - заглушка
+          console.warn(
+            "Ключ API (v3) не установлен или является заглушкой. Замените его в search_choice.html для корректной работы."
+          );
+          resultsDiv.innerHTML += `<p style="color: orange;">Предупреждение: Ключ API TMDB (v3) не установлен или является заглушкой. Пожалуйста, замените его в коде файла.</p>`;
+        }
+      } catch (error) {
+        console.error("Ошибка при инициализации XhZlobaClient:", error);
+        resultsDiv.innerHTML = `<p style="color: red;">Ошибка инициализации клиента. Проверьте консоль.</p>`;
+        if (searchButton) searchButton.disabled = true;
+        if (searchInput) searchInput.disabled = true;
+      }
+
+      document
+        .getElementById("search-type-form")
+        .addEventListener("submit", async function (event) {
+          event.preventDefault();
+
+          if (!client) {
+            console.error("Клиент не инициализирован.");
+            resultsDiv.innerHTML = `<p style="color: red;">Ошибка: Клиент не был инициализирован.</p>`;
+            return;
+          }
+
+          const searchType = document.querySelector(
+            'input[name="search_type"]:checked'
+          ).value;
+          const query = searchInput.value;
+
+          resultsDiv.innerHTML = `Идет поиск (тип: ${searchType}, запрос: "${query}")...`;
+          searchButton.disabled = true; // Блокируем кнопку на время запроса
+
+          try {
+            let response;
+            if (searchType === "movie") {
+              console.log(`Вызов client.media.searchMovies("${query}")`);
+              response = await client.media.searchMovies(query);
+            } else if (searchType === "tv") {
+              console.log(`Вызов client.media.searchTVShows("${query}")`);
+              response = await client.media.searchTVShows(query);
+            }
+
+            console.log("Ответ API:", response);
+
+            // Отображаем результат
+            resultsDiv.innerHTML = `<h2>Результаты для "${query}" (${
+              searchType === "movie" ? "Фильмы" : "Сериалы"
+            }):</h2>`;
+            if (response && response.items && response.items.length > 0) {
+              resultsDiv.innerHTML += `<p>Найдено: ${response.totalResults}, Страница: ${response.page}/${response.totalPages}</p>`;
+              // Отображаем каждый элемент
+              response.items.forEach((item) => {
+                const title = item.title || item.name; // У фильма title, у сериала name
+                const releaseDate = item.releaseDate || item.firstAirDate; // Даты тоже разные
+                const overview = item.overview || "Нет описания.";
+                const posterUrl =
+                  item.getPosterUrl("w200") || "placeholder.png"; // Используем метод getPosterUrl из библиотеки
+
+                resultsDiv.innerHTML += `
+                  <div style="border: 1px solid #ccc; margin-bottom: 10px; padding: 10px; display: flex;">
+                    <img src="${posterUrl}" alt="Постер" style="width: 100px; height: auto; margin-right: 10px;">
+                    <div>
+                      <strong>${title}</strong> (${
+                  releaseDate ? releaseDate.substring(0, 4) : "N/A"
+                })<br>
+                      <em>Рейтинг: ${
+                        item.voteAverage ? item.voteAverage.toFixed(1) : "N/A"
+                      } (${item.voteCount} голосов)</em><br>
+                      <p style="font-size: 0.9em;">${overview.substring(
+                        0,
+                        150
+                      )}${overview.length > 150 ? "..." : ""}</p>
+                    </div>
+                  </div>
+                `;
+              });
+            } else {
+              resultsDiv.innerHTML += "<p>Ничего не найдено.</p>";
+            }
+          } catch (error) {
+            console.error(`Ошибка при поиске (${searchType}):`, error);
+            resultsDiv.innerHTML = `<p style="color: red;">Ошибка при выполнении поиска. Детали в консоли.</p><pre>${
+              error.message || JSON.stringify(error)
+            }</pre>`;
+          } finally {
+            searchButton.disabled = false; // Разблокируем кнопку после запроса
+          }
+        });
+    </script>
+  </body>
+</html>

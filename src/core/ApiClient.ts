@@ -146,10 +146,4 @@ export class ApiClient {
     // Вся логика внутри #request.
     return this.#request<T>(endpoint, params);
   }
-
-  // Комментарий для "себя": Можно добавить аналогичные методы для POST, PUT, DELETE,
-  // если API их поддерживает и они нужны.
-  // public async post<T>(endpoint: string, body: any): Promise<T> { ... }
-  // public async put<T>(endpoint: string, body: any): Promise<T> { ... }
-  // public async delete<T>(endpoint: string): Promise<T> { ... }
 }
