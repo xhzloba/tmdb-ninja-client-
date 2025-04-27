@@ -1,0 +1,21 @@
+{
+  "name": "tmdb-ninja-client",
+  "version": "1.0.0",
+  "description": "Клиентская библиотека для API фильмов",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "api",
+    "movies",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

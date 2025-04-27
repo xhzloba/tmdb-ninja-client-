@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2017" /* Установить целевую версию ECMAScript */,
+    "module": "CommonJS" /* Указать систему модулей */,
+    "outDir": "./dist" /* Куда компилировать */,
+    "rootDir": "./src" /* Корневая директория исходников */,
+    "declaration": true /* Генерировать .d.ts файлы */,
+    "strict": true /* Включить все строгие проверки типов */,
+    "esModuleInterop": true /* Позволяет использовать default импорты для commonjs модулей */,
+    "skipLibCheck": true /* Пропускать проверку типов в файлах деклараций */,
+    "forceConsistentCasingInFileNames": true /* Обеспечить одинаковый регистр в именах файлов */
+  },
+  "include": ["src/**/*"] /* Какие файлы включать в компиляцию */,
+  "exclude": ["node_modules", "**/*.spec.ts"] /* Какие файлы исключить */
+}
