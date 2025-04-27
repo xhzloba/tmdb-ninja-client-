@@ -177,6 +177,46 @@ export class MediaService {
   }
 
   /**
+   * Получает список ТОЛЬКО сериалов, которые "сейчас смотрят".
+   * Поддерживает пагинацию.
+   * @param page - Номер страницы для загрузки (начиная с 1). По умолчанию 1.
+   * @returns Промис, который разрешается объектом PaginatedTVShowResult.
+   * @throws {ApiError} В случае ошибки API.
+   */
+  async getNowPlayingTvShows(page: number = 1): Promise<PaginatedTVShowResult> {
+    const endpoint = "";
+    const params = {
+      cat: "tv",
+      sort: "now_playing",
+      page: page,
+    };
+
+    try {
+      const response = await this.#apiClient.get<MediaListResponse>(
+        endpoint,
+        params
+      );
+      // Ожидаем только сериалы, фильтруем и маппим
+      const items = response.results
+        .filter(isTVShowMedia)
+        .map((tvData) => new TVShow(tvData));
+
+      return {
+        items: items,
+        page: response.page,
+        totalPages: response.total_pages,
+        totalResults: response.total_results,
+      };
+    } catch (error) {
+      console.error(
+        `Error fetching now playing TV shows (page ${page}):`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Получает список ТОЛЬКО популярных фильмов (сортировка 'top' в API).
    * Поддерживает пагинацию.
    * @param page - Номер страницы для загрузки (начиная с 1). По умолчанию 1.
