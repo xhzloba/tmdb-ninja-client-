@@ -7,9 +7,27 @@
     <style>
       body {
         font-family: sans-serif;
-        max-width: 800px;
-        margin: 20px auto;
-        padding: 0 15px;
+        /* Убираем ограничение ширины и центрирование */
+        /* max-width: 800px; */
+        /* margin: 20px auto; */
+        margin: 0; /* Убираем внешние отступы */
+        padding: 15px; /* Добавляем внутренние отступы по краям */
+        background-color: #f4f4f4; /* Добавим легкий фон для body */
+      }
+
+      /* Добавим обертку для основного контента, чтобы он не прилипал к краям */
+      .content-wrapper {
+        max-width: 1200px; /* Ограничим максимальную ширину контента для читаемости на больших экранах */
+        margin: 20px auto; /* Центрируем обертку */
+        background-color: #fff; /* Белый фон для контента */
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        text-align: center; /* Заголовок по центру */
+        margin-bottom: 25px;
       }
       ul {
         list-style: none;
@@ -61,19 +79,32 @@
       }
       /* Стили для двух колонок */
       .main-content {
-        display: flex;
-        gap: 20px; /* Пространство между колонками */
+        /* display: flex; */ /* Убрали */
+        /* gap: 20px; */ /* Убрали */
       }
       #details-container {
-        flex: 1 1 40%; /* Детали занимают 40% ширины */
-        order: 1; /* Детали слева */
-        margin-top: 0; /* Убираем верхний отступ */
-        align-self: flex-start; /* Выравниваем по верху */
+        /* Убираем стандартный фон, если он не нужен */
+        background-color: #fff;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 15px;
+        /* Добавляем немного тени для объема */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        /* Убираем Flex-свойства */
+        /* flex: 1 1 40%; */
+        /* order: 1; */
+        /* align-self: flex-start; */
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+        margin-bottom: 20px; /* Добавляем отступ снизу */
+        min-height: auto; /* Убираем мин. высоту, т.к. не в колонке */
+        position: relative;
+        display: none;
       }
       #tv-list-container {
-        /* Новый контейнер для списка */
-        flex: 1 1 60%; /* Список занимает 60% */
-        order: 2; /* Список справа */
+        /* Убираем Flex-свойства */
+        /* flex: 1 1 60%; */
+        /* order: 2; */
       }
       #tv-list li {
         /* Стили для элемента списка, если нужно */
@@ -114,67 +145,247 @@
         margin-right: 10px;
         min-width: 200px;
       }
+      /* Убираем стили для h2 внутри #details-container, т.к. он теперь во flex */
+      /* #details-container h2 { ... } */
+
+      /* Стили для вывода JSON */
+      .json-output {
+        background-color: #f8f9fa; /* Светлый фон для pre */
+        border: 1px solid #dee2e6; /* Рамка */
+        border-radius: 4px;
+        padding: 10px;
+        white-space: pre-wrap; /* Перенос строк */
+        word-wrap: break-word; /* Перенос слов */
+        font-size: 0.85em; /* Уменьшим шрифт */
+        max-height: 500px; /* Ограничим высоту блока JSON */
+        overflow-y: auto; /* Добавим прокрутку для JSON */
+      }
+
+      #details-status {
+        font-style: italic;
+        margin-bottom: 10px;
+        color: #6c757d;
+        /* display: none; добавлено в HTML */
+      }
+
+      /* Класс для скрытия контента деталей */
+      #details-content.hidden {
+        display: none;
+      }
+
+      /* --- Стили для списка медиа --- */
+      #media-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 30px; /* Увеличим отступ между карточками */
+        justify-content: flex-start;
+      }
+
+      #media-list li {
+        /* flex: 0 0 calc(50% - 15px); */ /* Предыдущая версия */
+        flex: 0 0 calc(50% - 20px); /* Новая, чуть меньше */
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        margin-bottom: 0;
+        cursor: pointer;
+        background-color: transparent;
+        box-sizing: border-box; /* Добавили */
+      }
+
+      #media-list li:hover {
+        background-color: #f9f9f9;
+        border-radius: 4px;
+      }
+
+      #media-list li img {
+        /* width: 100px; */ /* Было */
+        width: 150px; /* Стало */
+        /* height: 150px; */ /* Было */
+        height: 225px; /* Стало */
+        object-fit: cover;
+        border-radius: 4px;
+        margin-bottom: 0; /* Убрали */
+        display: block;
+        vertical-align: top; /* Вместо middle */
+        margin-right: 15px; /* Добавили отступ справа */
+      }
+
+      #media-list li div {
+        /* Старые стили для div - больше не нужны напрямую */
+      }
+
+      /* Стили для обновленной карточки */
+      .media-card-info {
+        flex: 1; /* Занимает оставшееся место */
+        font-size: 0.9em;
+        line-height: 1.3;
+        width: auto; /* Ширина определяется flex */
+        margin-top: 0; /* Убрали */
+        text-align: left; /* Выравнивание текста */
+      }
+      .media-card-info strong {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 1.05em; /* Чуть крупнее основного текста карточки */
+        line-height: 1.2;
+        /* white-space: nowrap; */ /* Можно добавить, если заголовки короткие */
+        /* overflow: hidden; */
+        /* text-overflow: ellipsis; */
+      }
+      .media-type-year {
+        display: block;
+        color: #666;
+        font-size: 0.9em;
+        margin-bottom: 5px;
+      }
+      .media-ratings,
+      .media-ids-quality {
+        font-size: 0.85em;
+        color: #444;
+        margin-bottom: 3px;
+        display: flex; /* Располагаем элементы в строку */
+        flex-wrap: wrap; /* Разрешаем перенос, если не влезает */
+        gap: 0 8px; /* Горизонтальный отступ между элементами */
+      }
+      .media-ids-quality {
+        color: #555;
+      }
+      .media-quality {
+        background-color: #e9ecef;
+        color: #495057;
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-weight: 500;
+      }
+
+      .media-overview {
+        font-size: 0.85em;
+        color: #6c757d; /* Серый цвет */
+        margin-top: 8px; /* Отступ сверху */
+        line-height: 1.4;
+        /* Ограничиваем количество строк и добавляем многоточие */
+        display: -webkit-box;
+        -webkit-line-clamp: 3; /* Показать максимум 3 строки */
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
     </style>
   </head>
   <body>
-    <h1>Популярные Фильмы и Сериалы (Vanilla JS + ESM Пример)</h1>
+    <!-- Обертка для контента -->
+    <div class="content-wrapper">
+      <h1>Пример использования TMDB Client (ESM)</h1>
 
-    <div class="view-controls">
-      <label for="view-selector">Выберите список:</label>
-      <select id="view-selector">
-        <option value="getPopular" selected>Популярные (все)</option>
-        <option value="getLatest">Последние добавленные (все)</option>
-        <option value="getNowPlaying">Сейчас смотрят (все)</option>
-        <option value="getPopularMovies">Популярные (фильмы)</option>
-        <option value="getPopularTVShows">Популярные (сериалы)</option>
-        <option value="getLatestMovies">Последние добавленные (фильмы)</option>
-        <option value="getLatestTvShows">
-          Последние добавленные (сериалы)
-        </option>
-        <option value="getNowPlayingMovies">Сейчас смотрят (фильмы)</option>
-        <option value="getNowPlayingTvShows">Сейчас смотрят (сериалы)</option>
-      </select>
-    </div>
+      <div class="view-controls">
+        <label for="view-selector"></label>
+        <select id="view-selector">
+          <option value="getPopular" selected>Популярные (все)</option>
+          <option value="getLatest">Последние добавленные (все)</option>
+          <option value="getNowPlaying">Сейчас смотрят (все)</option>
+          <option value="getPopularMovies">Популярные (фильмы)</option>
+          <option value="getPopularTVShows">Популярные (сериалы)</option>
+          <option value="getLatestMovies">
+            Последние добавленные (фильмы)
+          </option>
+          <option value="getLatestTvShows">
+            Последние добавленные (сериалы)
+          </option>
+          <option value="getNowPlayingMovies">Сейчас смотрят (фильмы)</option>
+          <option value="getNowPlayingTvShows">Сейчас смотрят (сериалы)</option>
+        </select>
+      </div>
 
-    <div class="main-content">
-      <div id="details-container" class="details">
-        <div
-          id="details-status"
-          style="font-style: italic; margin-bottom: 10px"
-        >
-          Кликните на фильм или сериал в списке, чтобы увидеть детали.
+      <div class="main-content">
+        <div id="details-container" class="details" style="position: relative">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              border-bottom: 1px solid #eee;
+              padding-bottom: 5px;
+              margin-bottom: 10px;
+            "
+          >
+            <h2 id="details-title" style="margin: 0; font-size: 1.2em">
+              Детали
+            </h2>
+            <button
+              id="toggle-details-btn"
+              title="Свернуть/Развернуть"
+              style="
+                background: none;
+                border: none;
+                font-size: 1.5em;
+                cursor: pointer;
+                padding: 0 5px;
+              "
+            >
+              ▲
+            </button>
+          </div>
+          <div
+            id="details-status"
+            style="font-style: italic; margin-bottom: 10px; display: none"
+          >
+            Кликните на фильм или сериал в списке, чтобы увидеть детали.
+          </div>
+          <div id="details-content">
+            <p style="color: #6c757d">
+              Кликните на элемент в списке, чтобы увидеть детали.
+            </p>
+          </div>
         </div>
-        <div id="details-content"></div>
+        <div id="tv-list-container">
+          <h2
+            id="list-title"
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: baseline;
+            "
+          >
+            Популярные фильмы и сериалы
+            <span
+              id="current-method-display"
+              style="
+                font-size: 0.7em;
+                color: #6c757d;
+                font-weight: normal;
+                /* margin-left: 8px; */ /* Убрали */
+              "
+            ></span>
+          </h2>
+          <ul id="media-list"></ul>
+          <div
+            id="error-message"
+            style="color: red; margin-top: 10px; display: none"
+          ></div>
+          <button
+            id="load-more-btn"
+            style="
+              display: none;
+              margin-top: 15px;
+              padding: 8px 15px;
+              cursor: pointer;
+            "
+          >
+            Загрузить еще...
+          </button>
+          <div id="status-messages" class="status"></div>
+          <!-- Кнопка "Загрузить еще" здесь не реализована для простоты -->
+        </div>
       </div>
-      <div id="tv-list-container">
-        <h2 id="list-title">Популярные фильмы и сериалы</h2>
-        <ul id="media-list"></ul>
-        <div
-          id="error-message"
-          style="color: red; margin-top: 10px; display: none"
-        ></div>
-        <button
-          id="load-more-btn"
-          style="
-            display: none;
-            margin-top: 15px;
-            padding: 8px 15px;
-            cursor: pointer;
-          "
-        >
-          Загрузить еще...
-        </button>
-        <div id="status-messages" class="status"></div>
-        <!-- Кнопка "Загрузить еще" здесь не реализована для простоты -->
-      </div>
+
+      <hr />
     </div>
+    <!-- Закрываем .content-wrapper -->
 
-    <hr />
-
-    <!--
-      Подключаем наш скрипт как МОДУЛЬ.
-      Внутри него мы будем импортировать библиотеку из CDN (unpkg).
-    -->
     <script type="module">
       import {
         createXhZlobaClient,
@@ -201,10 +412,15 @@
         document.getElementById("details-container");
       const detailsContentElement = document.getElementById("details-content");
       const detailsStatusElement = document.getElementById("details-status");
+      const detailsTitleElement = document.getElementById("details-title");
+      const toggleDetailsBtn = document.getElementById("toggle-details-btn");
       const loadMoreBtn = document.getElementById("load-more-btn");
       const errorMessageElement = document.getElementById("error-message");
       const listTitleElement = document.getElementById("list-title");
       const viewSelector = document.getElementById("view-selector");
+      const currentMethodDisplayElement = document.getElementById(
+        "current-method-display"
+      );
 
       // --- Состояние приложения ---
       let currentPage = 1;
@@ -213,6 +429,7 @@
       let isDetailsLoading = false;
       let mediaList = []; // Общий список для хранения загруженных Movie/TVShow объектов
       let currentMethodName = viewSelector ? viewSelector.value : "getPopular"; // Текущий выбранный метод
+      let currentTotalResults = null; // Новое состояние для общего кол-ва
 
       // --- Хелперы ---
       function showDetailsStatus(message, isError = false) {
@@ -222,9 +439,10 @@
           detailsStatusElement.style.display = "block";
         }
         if (detailsContentElement) {
-          detailsContentElement.style.display = "none";
-          detailsContentElement.innerHTML = ""; // Очищаем контент при показе статуса
+          detailsContentElement.classList.add("hidden");
+          detailsContentElement.innerHTML = "";
         }
+        if (detailsTitleElement) detailsTitleElement.textContent = "Статус";
       }
 
       // --- Загрузка и отображение ДЕТАЛЕЙ МЕДИА (с выводом всех полей) ---
@@ -265,28 +483,31 @@
               fetchOptions
             );
           } else if (mediaItemData instanceof TVShow) {
-            // Для TV пока нет уникальных appendToResponse, которые мы бы добавили
             details = await client.media.getTVShowDetails(
               mediaItemData.id,
               fetchOptions
             );
           } else {
-            throw new Error(
-              "Неизвестный тип медиа элемента для загрузки деталей."
-            );
+            throw new Error("Неизвестный тип медиа элемента.");
           }
 
           console.log("Получены детали:", details);
 
-          // --- Просто выводим весь объект details как JSON ---
-          let detailsHtml = `<h2>Детали объекта для ID: ${details.id}</h2>`;
-          detailsHtml += `<pre style="white-space: pre-wrap; word-wrap: break-word; background: #fff; border: 1px solid #ccc; padding: 10px; max-height: 600px; overflow-y: auto;">
+          // Обновляем заголовок
+          if (detailsTitleElement)
+            detailsTitleElement.textContent = `Детали: ${
+              details.title || details.name
+            }`;
+
+          // --- Возвращаем вывод всего объекта details как JSON ---
+          let detailsHtml = `<pre class="json-output">
 ${JSON.stringify(details, null, 2)}
 </pre>`;
 
           detailsContentElement.innerHTML = detailsHtml;
           detailsStatusElement.style.display = "none";
-          detailsContentElement.style.display = "block";
+          detailsContentElement.classList.remove("hidden");
+          if (toggleDetailsBtn) toggleDetailsBtn.textContent = "▲";
         } catch (error) {
           console.error(`Ошибка загрузки деталей:`, error);
           let msg = "Неизвестная ошибка загрузки деталей";
@@ -296,6 +517,7 @@ ${JSON.stringify(details, null, 2)}
             }`;
           }
           showDetailsStatus(msg, true);
+          if (detailsTitleElement) detailsTitleElement.textContent = "Ошибка";
         } finally {
           isDetailsLoading = false;
         }
@@ -313,9 +535,18 @@ ${JSON.stringify(details, null, 2)}
         }
         if (loadMoreBtn) loadMoreBtn.textContent = "Загрузка...";
 
-        // Обновляем заголовок в соответствии с выбранным методом
+        // Обновляем заголовок
         const selectedOption = viewSelector.options[viewSelector.selectedIndex];
-        listTitleElement.textContent = selectedOption.text;
+        listTitleElement.firstChild.textContent = selectedOption.text + " "; // Обновляем только текст заголовка, оставляя span
+        /* --- Удаляем этот блок отсюда ---
+        if (currentMethodDisplayElement) {
+          let infoText = `Метод API: ${methodName}`;
+          if (currentTotalResults !== null) {
+            infoText += `, Всего: ${currentTotalResults}`;
+          }
+          currentMethodDisplayElement.textContent = infoText;
+        }
+        */
 
         try {
           let result;
@@ -327,14 +558,40 @@ ${JSON.stringify(details, null, 2)}
             throw new Error(`Метод client.media.${methodName} не найден!`);
           }
 
+          // --- Добавим лог для всего объекта result ---
+          console.log(`Result object for ${methodName} page ${page}:`, result);
+          // -------------------------------------------
+
           console.log(`Loaded ${methodName} page ${page}:`, result);
           totalPages = result.totalPages;
           currentPage = result.page;
+          // Сохраняем общее количество только при загрузке первой страницы
+          if (page === 1) {
+            currentTotalResults = result.totalResults ?? null;
+          }
+
+          // --- Переносим обновление текста сюда ---
+          if (currentMethodDisplayElement) {
+            let infoText = `Метод API: ${methodName}`;
+            if (currentTotalResults !== null) {
+              infoText += `, Всего: ${currentTotalResults}`;
+            }
+            currentMethodDisplayElement.textContent = infoText;
+          }
+          // ---------------------------------------
 
           // Добавляем элементы в DOM и в массив
           if (result && result.items) {
             result.items.forEach((item) => {
               if (item instanceof Movie || item instanceof TVShow) {
+                // --- Добавим лог для проверки полей ---
+                console.log("Inspecting item:", item);
+                console.log(
+                  "Value of item.kinopoiskId from getter:",
+                  item.kinopoiskId
+                );
+                // ---------------------------------------
+
                 mediaList.push(item);
                 const li = document.createElement("li");
                 li.setAttribute("data-media-id", item.id.toString());
@@ -342,20 +599,75 @@ ${JSON.stringify(details, null, 2)}
                   item instanceof Movie
                     ? item.releaseDate?.substring(0, 4) || "N/A"
                     : item.firstAirDate?.substring(0, 4) || "N/A";
+                // Получаем доп. данные, если они есть (от прокси или из кэша)
+                const kpId = item.kinopoiskId ?? "N/A";
+                const imdbIdRaw = item.imdbId; // Получаем ID напрямую
+                console.log("Raw value from item.imdbId:", imdbIdRaw);
+                const imdbId = imdbIdRaw ?? "N/A"; // Используем nullish coalescing для ID
+
+                const imdbRatingRaw = item.imdbRating; // Получаем рейтинг напрямую
+                console.log("Raw value from item.imdbRating:", imdbRatingRaw);
+                const imdbRatingNum =
+                  typeof imdbRatingRaw === "string"
+                    ? parseFloat(imdbRatingRaw)
+                    : imdbRatingRaw;
+                const imdbRating =
+                  !isNaN(imdbRatingNum) && imdbRatingNum !== null
+                    ? imdbRatingNum.toFixed(1)
+                    : "N/A";
+                // -----------------------------------------------------------------
+
+                const tmdbRating = item.voteAverage?.toFixed(1) ?? "N/A";
+
+                // Преобразуем рейтинги в числа перед форматированием, если они строки
+                // --- Старая версия с геттером ---
+                // const kpRatingNum = typeof item.kinopoiskRating === 'string' ? parseFloat(item.kinopoiskRating) : item.kinopoiskRating;
+                // const kpRating = !isNaN(kpRatingNum) && kpRatingNum !== null ? kpRatingNum.toFixed(1) : 'N/A';
+                // --- Новая версия: доступ напрямую к item.kpRating ---
+                const kpRatingRaw = item.kpRating; // Получаем значение напрямую
+                console.log("Raw value from item.kpRating:", kpRatingRaw); // Логируем что получили
+                const kpRatingNum =
+                  typeof kpRatingRaw === "string"
+                    ? parseFloat(kpRatingRaw)
+                    : kpRatingRaw;
+                const kpRating =
+                  !isNaN(kpRatingNum) && kpRatingNum !== null
+                    ? kpRatingNum.toFixed(1)
+                    : "N/A";
+
+                // Пытаемся получить кастомное поле releaseQuality (camelCase)
+                const releaseQuality = item.releaseQuality ?? "N/A";
+
+                // Получаем описание
+                const overview = item.overview || "";
+
+                // --- Обновленный шаблон для лучшей читаемости ---
                 li.innerHTML = `
-                          <img src="${item.getPosterUrl(
-                            "w92"
-                          )}" alt="" loading="lazy" style="width:40px; height:60px; object-fit:cover;">
-                          <div style="display: inline-block; vertical-align: top; margin-left: 5px;">
-                          <strong>${item.title || item.name}</strong> (${
-                  item instanceof Movie ? "Фильм" : "Сериал"
-                }, ${year})
-                          <br>
-                          <small>TMDB: ${
-                            item.voteAverage?.toFixed(1) ?? "N/A"
-                          } | KP ID: ${item.kinopoiskId || "N/A"}</small>
-                          </div>
-                      `;
+                    <img src="${item.getPosterUrl(
+                      "w342"
+                    )}" alt="Постер" loading="lazy">
+                    <div class="media-card-info">
+                        <strong>${item.title || item.name}</strong>
+                        <small class="media-type-year">(${
+                          item instanceof Movie ? "Фильм" : "Сериал"
+                        }, ${year})</small>
+                        <div class="media-ratings">
+                            <span>TMDB: ${tmdbRating}</span>
+                            <span>KP: ${kpRating}</span>
+                            <span>IMDb: ${imdbRating}</span>
+                        </div>
+                        <div class="media-ids-quality">
+                            <span>KP ID: ${kpId}</span>
+                            <span>IMDb ID: ${imdbId}</span>
+                            ${
+                              releaseQuality !== "N/A"
+                                ? `<span class="media-quality">${releaseQuality}</span>`
+                                : ""
+                            } 
+                        </div>
+                        <p class="media-overview">${overview}</p>
+                    </div>
+                `;
                 mediaListElement.appendChild(li);
               } else {
                 console.warn("Получен элемент не Movie/TVShow:", item);
@@ -380,52 +692,34 @@ ${JSON.stringify(details, null, 2)}
             }`;
           }
           errorMessageElement.textContent = `Не удалось загрузить данные (${methodName}). ${msg}`;
-          errorMessageElement.style.display = "block";
-          if (loadMoreBtn) loadMoreBtn.style.display = "none";
         } finally {
           isLoading = false;
-          if (loadMoreBtn && !isLoading)
-            loadMoreBtn.textContent = "Загрузить еще...";
         }
       }
 
       // --- Обработчик клика на список (для показа деталей) ---
-      if (mediaListElement) {
-        mediaListElement.addEventListener("click", (event) => {
-          const clickedLi = event.target.closest("li[data-media-id]");
-          if (clickedLi) {
-            const mediaIdStr = clickedLi.getAttribute("data-media-id");
-            if (mediaIdStr) {
-              const mediaId = parseInt(mediaIdStr, 10);
-              const mediaItemData = mediaList.find(
-                (item) => item.id === mediaId
-              );
-              if (
-                mediaItemData instanceof Movie ||
-                mediaItemData instanceof TVShow
-              ) {
-                displayMediaDetails(mediaItemData);
-              } else {
-                console.warn("Clicked item not found or invalid type");
-                showDetailsStatus(
-                  "Не удалось найти данные для этого элемента.",
-                  true
-                );
-              }
+      mediaListElement.addEventListener("click", function (event) {
+        if (event.target.closest("li")) {
+          const mediaId = event.target
+            .closest("li")
+            .getAttribute("data-media-id");
+          if (mediaId) {
+            const mediaItem = mediaList.find(
+              (item) => item.id.toString() === mediaId
+            );
+            if (mediaItem) {
+              displayMediaDetails(mediaItem);
             }
           }
-        });
-      }
+        }
+      });
 
       // --- Обработчик для кнопки "Загрузить еще" ---
-      if (loadMoreBtn) {
-        loadMoreBtn.addEventListener("click", () => {
-          if (!isLoading && currentPage < totalPages) {
-            // Загружаем следующую страницу для ТЕКУЩЕГО метода
-            fetchAndDisplay(currentMethodName, currentPage + 1);
-          }
-        });
-      }
+      loadMoreBtn.addEventListener("click", function () {
+        if (currentPage < totalPages) {
+          fetchAndDisplay(currentMethodName, currentPage + 1);
+        }
+      });
 
       // --- Обработчик для выбора метода ---
       if (viewSelector) {
@@ -434,21 +728,29 @@ ${JSON.stringify(details, null, 2)}
           if (newMethodName !== currentMethodName && !isLoading) {
             console.log(`Смена вида на: ${newMethodName}`);
             currentMethodName = newMethodName;
-            detailsContainerElement.style.display = "none"; // Скрываем детали
-            fetchAndDisplay(currentMethodName, 1); // Загружаем первую страницу нового вида
+            detailsContainerElement.style.display = "none";
+            currentTotalResults = null; // Сбрасываем счетчик при смене вида
+            fetchAndDisplay(currentMethodName, 1);
+          }
+        });
+      }
+
+      // --- Обработчик для кнопки сворачивания/разворачивания деталей ---
+      if (toggleDetailsBtn) {
+        toggleDetailsBtn.addEventListener("click", () => {
+          if (detailsContentElement) {
+            const isHidden = detailsContentElement.classList.toggle("hidden");
+            toggleDetailsBtn.textContent = isHidden ? "▼" : "▲";
           }
         });
       }
 
       // --- Запуск ---
       if (viewSelector) {
-        // Устанавливаем начальное состояние из селектора
         currentMethodName = viewSelector.value;
-        fetchAndDisplay(currentMethodName, 1); // Загружаем первую страницу выбранного вида
+        fetchAndDisplay(currentMethodName, 1);
       } else {
         console.error("Не найден элемент #view-selector");
-        // Можно загрузить что-то по умолчанию, если селектор не найден
-        // fetchAndDisplay('getPopular', 1);
       }
     </script>
   </body>

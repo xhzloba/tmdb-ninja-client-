@@ -73,7 +73,7 @@ export class Movie extends MediaItem {
     this.#credits = data.credits;
     this.#videos = data.videos;
     this.#external_ids = data.external_ids;
-    this.#watchProviders = data["watch/providers"]; // Доступ по ключу со слешем
+    this.#watchProviders = data["watch/providers"];
     this.#recommendations = data.recommendations;
     this.#similar = data.similar;
     this.#reviews = data.reviews;
