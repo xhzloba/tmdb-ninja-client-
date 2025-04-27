@@ -492,7 +492,7 @@ export class MediaService {
   async getLatestTvShows(page: number = 1): Promise<PaginatedTVShowResult> {
     const endpoint = "";
     const params = {
-      cat: "tv", // Запрашиваем только сериалы
+      cat: "tv",
       sort: "latest",
       page: page,
     };
@@ -502,7 +502,6 @@ export class MediaService {
         endpoint,
         params
       );
-      // Ожидаем только сериалы, фильтруем и маппим
       const items = response.results
         .filter(isTVShowMedia)
         .map((tvData) => new TVShow(tvData));
@@ -515,6 +514,96 @@ export class MediaService {
       };
     } catch (error) {
       console.error(`Error fetching latest TV shows (page ${page}):`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Ищет фильмы по текстовому запросу.
+   * Поддерживает пагинацию.
+   * @param query - Поисковый запрос.
+   * @param page - Номер страницы для загрузки (начиная с 1). По умолчанию 1.
+   * @returns Промис, который разрешается объектом PaginatedMovieResult.
+   * @throws {ApiError} В случае ошибки API.
+   */
+  async searchMovies(
+    query: string,
+    page: number = 1
+  ): Promise<PaginatedMovieResult> {
+    // Комментарий для "себя": Используем специальный эндпоинт /search/movie
+    const endpoint = "/search/movie";
+    const params = {
+      query: query,
+      page: page,
+    };
+
+    try {
+      const response = await this.#apiClient.get<MediaListResponse>(
+        endpoint,
+        params
+      );
+
+      // Ожидаем только фильмы в результатах поиска
+      const items = response.results
+        .filter(isMovieMedia)
+        .map((movieData) => new Movie(movieData));
+
+      return {
+        items: items,
+        page: response.page,
+        totalPages: response.total_pages,
+        totalResults: response.total_results,
+      };
+    } catch (error) {
+      console.error(
+        `Error searching movies (query: "${query}", page ${page}):`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Ищет сериалы по текстовому запросу.
+   * Поддерживает пагинацию.
+   * @param query - Поисковый запрос.
+   * @param page - Номер страницы для загрузки (начиная с 1). По умолчанию 1.
+   * @returns Промис, который разрешается объектом PaginatedTVShowResult.
+   * @throws {ApiError} В случае ошибки API.
+   */
+  async searchTVShows(
+    query: string,
+    page: number = 1
+  ): Promise<PaginatedTVShowResult> {
+    // Комментарий для "себя": Используем специальный эндпоинт /search/tv
+    const endpoint = "/search/tv";
+    const params = {
+      query: query,
+      page: page,
+    };
+
+    try {
+      const response = await this.#apiClient.get<MediaListResponse>(
+        endpoint,
+        params
+      );
+
+      // Ожидаем только сериалы в результатах поиска
+      const items = response.results
+        .filter(isTVShowMedia)
+        .map((tvData) => new TVShow(tvData));
+
+      return {
+        items: items,
+        page: response.page,
+        totalPages: response.total_pages,
+        totalResults: response.total_results,
+      };
+    } catch (error) {
+      console.error(
+        `Error searching TV shows (query: "${query}", page ${page}):`,
+        error
+      );
       throw error;
     }
   }
