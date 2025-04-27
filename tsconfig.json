@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2017" /* Установить целевую версию ECMAScript */,
-    "module": "CommonJS" /* Указать систему модулей */,
+    "module": "esnext" /* Указать систему модулей (изменено с CommonJS) */,
     "sourceMap": true /* Для sourcemaps в Rollup */,
     "strict": true /* Включить все строгие проверки типов */,
     "esModuleInterop": true /* Позволяет использовать default импорты для commonjs модулей */,

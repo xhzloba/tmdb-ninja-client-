@@ -2,7 +2,7 @@
 // Запуск: ts-node test-client.ts (из корневой папки проекта)
 
 import {
-  createNinjaClient,
+  createXhZlobaClient,
   ApiClient,
   ApiError,
   Movie,
@@ -23,8 +23,8 @@ const BASE_URL = "https://tmdb.kurwa-bober.ninja/"; // Определяем URL
 // Создаем отдельный ApiClient ТОЛЬКО для теста сырых запросов
 const rawApiClient = new ApiClient(BASE_URL, API_KEY);
 
-// Создаем обычный клиент для теста сервисов, передавая ключ
-const client = createNinjaClient(BASE_URL, API_KEY);
+// Создаем обычный клиент для теста сервисов, передавая ключ и используя новую функцию
+const client = createXhZlobaClient(BASE_URL, API_KEY);
 
 async function runTest() {
   console.log("Запускаем тест API клиента...");

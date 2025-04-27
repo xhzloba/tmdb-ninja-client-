@@ -55,7 +55,7 @@ const DEFAULT_API_URL = "https://tmdb.kurwa-bober.ninja/";
  * @param apiKey - API ключ для доступа к API.
  * @returns Объект, содержащий готовые к использованию сервисы (например, `media`).
  */
-export function createNinjaClient(
+export function createXhZlobaClient(
   baseURL: string = DEFAULT_API_URL,
   apiKey: string
 ) {

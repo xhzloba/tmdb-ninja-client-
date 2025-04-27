@@ -12,16 +12,16 @@ yarn add tmdb-xhzloba
 
 ## Начало Работы
 
-Основной способ использования библиотеки — через фабричную функцию `createNinjaClient`.
+Основной способ использования библиотеки — через фабричную функцию `createXhZlobaClient`.
 
 ```typescript
-import { createNinjaClient, ApiError } from "tmdb-xhzloba";
+import { createXhZlobaClient, ApiError } from "tmdb-xhzloba";
 
 const API_KEY = "YOUR_TMDB_API_KEY"; // Твой API ключ
 const BASE_URL = "https://tmdb.kurwa-bober.ninja/"; // URL твоего прокси
 
 // Создаем клиент
-const client = createNinjaClient(BASE_URL, API_KEY);
+const client = createXhZlobaClient(BASE_URL, API_KEY);
 
 async function fetchMovies() {
   try {
@@ -76,7 +76,7 @@ fetchMovies();
 
 ## Конфигурация
 
-#### `createNinjaClient(baseURL: string, apiKey: string)`
+#### `createXhZlobaClient(baseURL: string, apiKey: string)`
 
 - `baseURL`: (Обязательный) Базовый URL твоего прокси API.
 - `apiKey`: (Обязательный) Твой API ключ для доступа к TMDB (или к твоему прокси, если он требует ключ).
@@ -267,3 +267,21 @@ try {
 ## Экспортируемые Типы
 
 Библиотека также экспортирует большинство интерфейсов TypeScript, описывающих структуры данных (например, `Genre`, `CastMember`, `CrewMember`, `Video`, `Episode`, `Season`, `PaginatedMovieResult`, `MovieMedia` и т.д.), чтобы вы могли использовать их для типизации в своем коде.
+
+// В примере для Vanilla JS / CDN:
+// ...
+
+<script>
+// Проверяем доступность глобальной переменной пакета (tmdbXhzloba)
+if (tmdbXhzloba) {
+// Достаем функцию createXhZlobaClient из глобального объекта
+const { createXhZlobaClient } = tmdbXhzloba;
+const client = createXhZlobaClient('https://tmdb.kurwa-bober.ninja/', 'YOUR_API_KEY');
+// ... дальше используем client ...
+client.media.getPopularMovies(1).then(data => console.log(data.items));
+} else {
+console.error("Библиотека не загрузилась!");
+}
+</script>
+
+// ... остальной код ...
