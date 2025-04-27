@@ -4,6 +4,14 @@
 
 ## Возможности
 
+- Получение списков популярных, "сейчас смотрят" фильмов и сериалов с пагинацией.
+- Получение детальной информации о фильмах и сериалах с возможностью запроса дополнительных данных (`appendToResponse`).
+- Типизированные классы `Movie` и `TVShow` с удобными геттерами и методами.
+- Вспомогательный класс `ImageConfig` для работы с URL изображений.
+- Обработка кастомных полей, добавляемых прокси (`kinopoiskId`, `kpRating`, `releaseQuality` и т.д.), даже если они приходят в `camelCase`.
+- Обработка ошибок API с кастомным классом `ApiError`.
+- Поддержка UMD и ESM модулей для использования в различных окружениях.
+
 ## Установка
 
 ```bash
@@ -12,76 +20,163 @@ npm install tmdb-xhzloba
 yarn add tmdb-xhzloba
 ```
 
-## Начало Работы
-
-Основной способ использования библиотеки — через фабричную функцию `createXhZlobaClient`.
+## Начало Работы (Пример с ESM)
 
 ```typescript
-import { createXhZlobaClient, ApiError } from "tmdb-xhzloba";
+import { createXhZlobaClient, ApiError, Movie, TVShow } from "tmdb-xhzloba";
 
 const API_KEY = "YOUR_TMDB_API_KEY"; // Твой API ключ
-const BASE_URL = "https://tmdb.kurwa-bober.ninja/"; // URL твоего прокси
 
-// Создаем клиент
-const client = createXhZlobaClient(BASE_URL, API_KEY);
+// Создаем клиент (URL прокси используется по умолчанию)
+const client = createXhZlobaClient(API_KEY);
 
-async function fetchMovies() {
+async function fetchMedia() {
   try {
-    // Получаем популярные фильмы (первая страница)
-    const popularMovies = await client.media.getPopularMovies(1);
+    // Получаем популярные фильмы и сериалы (первая страница)
+    const popularMedia = await client.media.getPopular(1);
 
-    console.log(`Всего найдено: ${popularMovies.totalResults}`);
+    console.log(`Всего найдено: ${popularMedia.totalResults}`);
 
-    popularMovies.items.forEach((movie) => {
-      console.log(`- ${movie.title} (${movie.releaseDate?.substring(0, 4)})`);
-      // Получаем URL постера определенного размера
-      console.log(`  Постер (w342): ${movie.getPosterUrl("w342")}`);
+    popularMedia.items.forEach((item) => {
+      if (item instanceof Movie) {
+        console.log(
+          `- [Фильм] ${item.title} (${item.releaseDate?.substring(0, 4)})`
+        );
+      } else if (item instanceof TVShow) {
+        console.log(
+          `- [Сериал] ${item.name} (${item.firstAirDate?.substring(0, 4)})`
+        );
+      }
+      // Доступ к данным прокси:
+      console.log(
+        `  KP ID: ${item.kinopoiskId || "N/A"}, Рейтинг: ${
+          item.kpRating || "N/A"
+        }`
+      );
+      // Получаем URL постера
+      console.log(`  Постер (w342): ${item.getPosterUrl("w342")}`);
     });
 
-    // Получаем детали конкретного фильма (Бэтмен)
-    const batmanDetails = await client.media.getMovieDetails(414906, {
+    // Получаем детали конкретного фильма
+    const movieId = 414906; // Пример ID
+    const movieDetails = await client.media.getMovieDetails(movieId, {
       language: "ru",
-      appendToResponse: ["credits", "videos"], // Запрашиваем доп. данные
+      appendToResponse: ["credits", "videos", "images"],
     });
 
-    console.log(`\nДетали фильма: ${batmanDetails.title}`);
-    console.log(`Слоган: ${batmanDetails.tagline || "Нет"}`);
+    console.log(`\nДетали фильма: ${movieDetails.title}`);
     console.log(
-      `Режиссеры: ${batmanDetails
+      `Режиссеры: ${movieDetails
         .getDirectors()
         .map((d) => d.name)
         .join(", ")}`
     );
-    console.log(
-      `Трейлер (YouTube): ${
-        batmanDetails.videos?.results?.find(
-          (v) => v.site === "YouTube" && v.type === "Trailer"
-        )?.key || "Не найден"
-      }`
-    );
+    const logo =
+      movieDetails.images?.logos?.find((l) => l.iso_639_1 === "ru") ||
+      movieDetails.images?.logos?.[0];
+    if (logo) {
+      console.log(
+        `Лого URL: ${movieDetails.getLogoUrl(logo.file_path, "w154")}`
+      );
+    }
   } catch (error) {
     if (error instanceof ApiError) {
       console.error(
         `Ошибка API (${error.statusCode || "N/A"}): ${error.message}`
       );
-      if (error.apiMessage) {
-        console.error(`  Сообщение от сервера: ${error.apiMessage}`);
-      }
     } else {
       console.error("Произошла неожиданная ошибка:", error);
     }
   }
 }
 
-fetchMovies();
+fetchMedia();
 ```
+
+## Использование в Браузере
+
+Библиотеку можно использовать напрямую в браузере двумя способами:
+
+### 1. UMD через `<script>`
+
+Подключите UMD-бандл (например, из папки `dist` или CDN) и обращайтесь к библиотеке через глобальный объект `window.tmdbXhzloba`.
+
+```html
+<script src="путь/к/dist/tmdb-xhzloba.umd.js"></script>
+<script>
+  if (window.tmdbXhzloba) {
+    const { createXhZlobaClient, ApiError, Movie, TVShow } = window.tmdbXhzloba;
+
+    const API_KEY = "YOUR_API_KEY";
+    const client = createXhZlobaClient(API_KEY); // URL по умолчанию
+
+    client.media
+      .getPopular(1)
+      .then((data) => {
+        console.log("Популярные медиа (UMD):", data.items);
+        data.items.forEach((item) => {
+          // Проверяем тип и выводим данные
+          if (item instanceof Movie) {
+            console.log(`Фильм: ${item.title}`);
+          } else if (item instanceof TVShow) {
+            console.log(`Сериал: ${item.name}`);
+          }
+          console.log(`  KP ID: ${item.kinopoiskId}`); // Доступ к полям прокси
+        });
+      })
+      .catch((error) => {
+        if (error instanceof ApiError)
+          console.error("API Error:", error.message);
+        else console.error("Error:", error);
+      });
+  } else {
+    console.error("Библиотека tmdbXhzloba не загружена!");
+  }
+</script>
+```
+
+_(Смотрите `examples/vanilla-js-example.js` для более полного примера)_
+
+### 2. ESM через `<script type="module">`
+
+Используйте нативные ES-модули браузера для импорта из ESM-бандла. Прямая ссылка на последнюю версию:
+`https://unpkg.com/tmdb-xhzloba@latest/dist/index.esm.js`
+
+```html
+<script type="module">
+  // Импорт из CDN (замените @latest на конкретную версию для стабильности)
+  import {
+    createXhZlobaClient,
+    ApiError,
+    Movie,
+    TVShow,
+  } from "https://unpkg.com/tmdb-xhzloba@latest/dist/index.esm.js";
+
+  const API_KEY = "YOUR_API_KEY";
+  const client = createXhZlobaClient(API_KEY); // URL по умолчанию
+
+  async function loadPopular() {
+    try {
+      const popular = await client.media.getPopular(1);
+      console.log("Популярные медиа (ESM):", popular.items);
+      // ... дальнейшая обработка ...
+    } catch (error) {
+      if (error instanceof ApiError) console.error("API Error:", error.message);
+      else console.error("Error:", error);
+    }
+  }
+  loadPopular();
+</script>
+```
+
+_(Смотрите `examples/vanilla-esm-example.html` для более полного примера)_
 
 ## Конфигурация
 
-#### `createXhZlobaClient(baseURL: string, apiKey: string)`
+#### `createXhZlobaClient(apiKey: string, baseURL?: string)`
 
-- `baseURL`: (Обязательный) Базовый URL твоего прокси API.
-- `apiKey`: (Обязательный) Твой API ключ для доступа к TMDB (или к твоему прокси, если он требует ключ).
+- `apiKey`: (Обязательный) Твой API ключ для доступа к TMDB (или к твоему прокси).
+- `baseURL`: (Необязательный) Базовый URL твоего прокси API. **По умолчанию используется `'https://tmdb.kurwa-bober.ninja/'`**.
 - **Возвращает**: Объект клиента, содержащий сервисы (сейчас только `media`).
 
 #### `ImageConfig`
@@ -98,13 +193,13 @@ fetchMovies();
 
 Предоставляет методы для получения информации о фильмах и сериалах.
 
-- **`getPopularMovies(page: number): Promise<PaginatedMovieResult>`**
+- **`getPopular(page: number): Promise<PaginatedMediaResult>`**
 
-  - Получает список популярных фильмов.
+  - Получает СМЕШАННЫЙ список популярных фильмов и сериалов (сортировка `top` в API).
   - `page`: Номер страницы (начиная с 1).
-  - Возвращает `PaginatedMovieResult`, содержащий:
-    - `items`: Массив экземпляров класса `Movie`.
-    - `page`, `totalPages`, `totalResults`: Информация о пагинации.
+  - Возвращает `PaginatedMediaResult`, содержащий:
+    - `items`: Массив экземпляров `Movie` или `TVShow`.
+    - `page`, `totalPages`, `totalResults`.
 
 - **`getNowPlaying(page: number): Promise<PaginatedMediaResult>`**
 
@@ -170,42 +265,33 @@ fetchMovies();
     - `'reviews'` (обзоры пользователей)
     - `'images'` (дополнительные постеры, фоны, логотипы)
 
-## Сущности Медиа (`Movie`, `TVShow`)
+## Сущности Медиа (`MediaItem`, `Movie`, `TVShow`)
 
 Экземпляры этих классов возвращаются методами сервиса. Они предоставляют удобный доступ к данным через геттеры и методы.
 
-#### Общие Поля и Методы (для `Movie` и `TVShow` из `MediaItem`)
+#### Общие Поля и Методы (`MediaItem`)
 
-- `id: number`: Уникальный ID TMDB.
-- `overview: string`: Краткое описание.
-- `popularity: number`: Показатель популярности.
-- `voteAverage: number`: Средний рейтинг (0-10).
-- `voteCount: number`: Количество голосов.
-- `posterPath: string | null`: Путь к файлу постера (без базового URL).
-- `backdropPath: string | null`: Путь к файлу фона (без базового URL).
-- `adult: boolean`: Является ли контент для взрослых.
-- `originalLanguage: string`: Оригинальный язык (код, например 'en').
-- `status: string`: Текущий статус ('Released', 'Returning Series', 'Ended' и т.д.).
-- `getPosterUrl(size: string = 'w500'): string | null`: Возвращает полный URL постера указанного размера (например, 'w185', 'w342', 'w500', 'original'). Размеры можно получить из `ImageConfig`.
-- `getBackdropUrl(size: string = 'w780'): string | null`: Возвращает полный URL фона указанного размера (например, 'w300', 'w780', 'w1280', 'original').
-- `names`, `PG`, `release_quality`, `kinopoisk_id`, `kp_rating`, `imdb_id`, `imdb_rating`, `last_air_date` (доступны через соответствующие геттеры).
+- `id: number`, `overview: string`, `popularity: number`, `voteAverage: number`, `voteCount: number`, `posterPath: string | null`, `backdropPath: string | null`, `adult: boolean`, `originalLanguage: string`, `status: string`.
+- **Поля прокси**: `names: string[]`, `pgRating: number`, `releaseQuality?: string`, `kinopoiskId?: string`, `kpRating?: string`, `imdbId?: string`, `imdbRating?: string`, `lastAirDate?: string` (доступны через соответствующие геттеры, например `item.kinopoiskId`). _Библиотека корректно обрабатывает эти поля, даже если прокси возвращает их в camelCase._
+- **Детальные поля (если запрошены через `appendToResponse`)**: `genres: Genre[]`, `homepage: string | null`, `productionCompanies: ProductionCompany[]`, `productionCountries: ProductionCountry[]`, `spokenLanguages: SpokenLanguage[]`, `keywords: KeywordsResponse`, `alternativeTitles: AlternativeTitlesResponse`, `contentRatings: ContentRatingsResponse`, `credits: CreditsResponse`, `videos: VideosResponse`, `externalIds: ExternalIdsResponse`, `watchProviders: WatchProviderResponse`, `recommendations: RecommendationsResponse`, `similar: SimilarResponse`, `reviews: ReviewsResponse`, `images: ImagesResponse` (доступны через геттеры, например `item.genres`, `item.credits`, `item.images`).
+- **Методы изображений**:
+  - `getPosterUrl(size: string = 'w500'): string | null`
+  - `getBackdropUrl(size: string = 'w780'): string | null`
+  - `getLogoUrl(filePath: string | null, size: string = 'original'): string | null`: Формирует URL для логотипа (используйте `filePath` из `item.images.logos`).
+  - `getProfileUrl(filePath: string | null, size: string = 'original'): string | null`: Формирует URL для аватара (используйте `profile_path` из `item.credits`).
+- **Методы команды (требуют `appendToResponse: ['credits']`)**:
+  - `getDirectors(): CrewMember[]`: Возвращает режиссеров.
+  - `getCast(): CastMember[]`: Возвращает актеров.
+  - `getCrewByDepartment(department: string): CrewMember[]`: Возвращает команду по департаменту (e.g., 'Writing').
 
-#### Специфичные Поля `Movie`
+#### Специфичные Поля `Movie` (в дополнение к `MediaItem`)
 
-- `title: string`: Название фильма (локализованное, если запрошено).
-- `originalTitle: string`: Оригинальное название фильма.
-- `releaseDate: string`: Дата релиза (строка 'YYYY-MM-DD').
-- `video: boolean`: Связан ли с фильмом видеофайл (обычно для трейлеров на TMDB).
-- `belongsToCollection: object | null | undefined`: Информация о коллекции, к которой принадлежит фильм (если есть).
-- `budget: number | undefined`: Бюджет фильма (если известен).
-- `revenue: number | undefined`: Сборы фильма (если известны).
-- `runtime: number | null | undefined`: Продолжительность в минутах.
-- `tagline: string | null | undefined`: Слоган фильма.
+- `title: string`, `originalTitle: string`, `releaseDate: string`, `video: boolean`.
+- **Детальные поля**: `belongsToCollection: object | null`, `budget: number`, `revenue: number`, `runtime: number | null`, `tagline: string | null`, `releaseDates: ReleaseDatesResponse` (также доступно через `item.releaseDates`).
 
 #### Специфичные Методы `Movie`
 
-- `getDirectors(): CrewMember[]`: Возвращает массив режиссеров (требует `'credits'` в `appendToResponse`).
-- `getCast(): CastMember[]`: Возвращает массив актеров (требует `'credits'` в `appendToResponse`).
+- _Нет специфичных методов (методы для команды теперь в `MediaItem`)._
 
 #### Получение локализованных изображений (Постеры, Фоны, Логотипы)
 
@@ -248,56 +334,30 @@ fetchMovies();
 
 3.  **Сформируйте URL:**
 
-    - Для логотипов: `const logoUrl = details.getLogoUrl(russianLogoPath, 'w154');`
-    - Для постеров/фонов (т.к. `getPosterUrl` не принимает путь): Используйте `ImageConfig.buildImageUrl` напрямую или метод из `MediaItem`, передав `filePath`.
+    - Для логотипов: Используйте метод `getLogoUrl`, передав найденный `filePath`.
+      ```typescript
+      const logoUrl = details.getLogoUrl(russianLogoPath, "w154");
+      ```
+    - Для постеров/фонов (т.к. `getPosterUrl`/`getBackdropUrl` используют основной путь): Используйте `ImageConfig.buildImageUrl` напрямую или также методы `getPosterUrl`/`getBackdropUrl`, но передав им `filePath` в качестве _первого_ аргумента (это недокументированное поведение, лучше использовать `ImageConfig.buildImageUrl`).
 
       ```typescript
-      import { ImageConfig } from "tmdb-xhzloba"; // Импортировать ImageConfig
+      import { ImageConfig } from "tmdb-xhzloba";
 
       const posterUrl = ImageConfig.buildImageUrl(posterPathToUse, "w500");
-      // или можно вызвать метод базового класса, если он доступен
-      // const posterUrl = details.buildImageUrl(posterPathToUse, 'w500'); // Если бы такой метод был в MediaItem
       ```
 
 **Примечание для прокси `tmdb.kurwa-bober.ninja`:**
 _Теоретически, этот конкретный прокси-сервер **может быть** настроен так, чтобы он самостоятельно подставлял путь к локализованному изображению в основные поля `poster_path` и `backdrop_path`, если был передан соответствующий `language` в запросе. Если прокси это делает, то вызов `details.getPosterUrl()` или `details.getBackdropUrl()` может вернуть локализованный URL. Однако, это **нестандартное поведение**, и данная библиотека на него не полагается. Стандартный и надежный способ получения локализованных версий описан выше через `appendToResponse=images`._
 
-#### Специфичные Поля `TVShow`
+#### Специфичные Поля `TVShow` (в дополнение к `MediaItem`)
 
-- `name: string`: Название сериала (локализованное).
-- `originalName: string`: Оригинальное название сериала.
-- `firstAirDate: string`: Дата выхода первого эпизода ('YYYY-MM-DD').
-- `originCountry: string[]`: Массив кодов стран-производителей.
-- `numberOfEpisodes: number | undefined`: Общее количество эпизодов.
-- `numberOfSeasons: number | undefined`: Общее количество сезонов.
-- `inProduction: boolean | undefined`: Находится ли сериал еще в производстве.
-- `languages: string[] | undefined`: Массив кодов языков сериала.
-- `lastEpisodeToAir: Episode | null | undefined`: Объект с информацией о последнем вышедшем эпизоде.
-- `nextEpisodeToAir: Episode | null | undefined`: Объект с информацией о следующем эпизоде (если анонсирован).
-- `networks: ProductionCompany[] | undefined`: Массив телеканалов/сетей, где выходил сериал.
-- `type: string | undefined`: Тип сериала ('Scripted', 'Reality' и т.д.).
-- `seasons: Season[] | undefined`: Массив объектов с информацией о сезонах (ID, название, дата выхода, количество эпизодов и т.д.).
-- `createdBy: CastMember[] | undefined`: Массив создателей сериала.
-- `episodeRunTime: number[] | undefined`: Массив с возможными длительностями эпизодов в минутах.
+- `name: string`, `originalName: string`, `firstAirDate: string`.
+- **Детальные поля**: `originCountry: string[]`, `numberOfEpisodes: number`, `numberOfSeasons: number`, `inProduction: boolean`, `languages: string[]`, `lastEpisodeToAir: Episode | null`, `nextEpisodeToAir: Episode | null`, `networks: ProductionCompany[]`, `type: string`, `seasons: Season[]`, `createdBy: CastMember[]`, `episodeRunTime: number[]` (доступны через геттеры).
 
 #### Поля из `appendToResponse` (Доступны через геттеры на `Movie` и `TVShow`, если запрошены)
 
-- `genres: Genre[] | undefined`: Массив объектов жанров.
-- `productionCompanies: ProductionCompany[] | undefined`: Массив компаний-производителей.
-- `productionCountries: ProductionCountry[] | undefined`: Массив стран-производителей.
-- `spokenLanguages: SpokenLanguage[] | undefined`: Массив языков озвучки.
-- `keywords: KeywordsResponse | undefined`: Объект с массивом ключевых слов (`keywords.keywords`).
-- `alternativeTitles: AlternativeTitlesResponse | undefined`: Объект с массивом альтернативных названий для разных стран (`alternativeTitles.titles`).
-- `contentRatings: ContentRatingsResponse | undefined`: Объект с массивом возрастных рейтингов для разных стран (`contentRatings.results`).
-- `releaseDates: ReleaseDatesResponse | undefined`: (Только для `Movie`) Объект с массивом дат релиза и сертификаций для разных стран (`releaseDates.results`).
-- `credits: CreditsResponse | undefined`: Объект с массивами актеров (`credits.cast`) и съемочной группы (`credits.crew`).
-- `videos: VideosResponse | undefined`: Объект с массивом видео (`videos.results`), включая трейлеры, тизеры и т.д. Содержит ключи для YouTube/Vimeo.
-- `externalIds: ExternalIdsResponse | undefined`: Объект с ID на внешних ресурсах (`externalIds.imdb_id`, `externalIds.wikidata_id` и т.д.).
-- `watchProviders: WatchProviderResponse | undefined`: Объект с информацией о доступности на стриминговых платформах по странам (`watchProviders.results['RU']`, `watchProviders.results['US']` и т.д.). Содержит ссылки и списки сервисов для подписки (`flatrate`), аренды (`rent`) и покупки (`buy`).
-- `recommendations: RecommendationsResponse | undefined`: Объект с пагинированным списком рекомендуемых фильмов/сериалов (`recommendations.results`).
-- `similar: SimilarResponse | undefined`: Объект с пагинированным списком похожих фильмов/сериалов (`similar.results`).
-- `reviews: ReviewsResponse | undefined`: Объект с пагинированным списком обзоров пользователей (`reviews.results`).
-- `images: ImagesResponse | undefined`: Объект с дополнительными массивами постеров (`images.posters`), фонов (`images.backdrops`) и логотипов (`images.logos`).
+// Переносим описание этих полей в раздел MediaItem, здесь можно убрать дублирование
+// ... (УДАЛИТЬ ЭТОТ ДЛИННЫЙ СПИСОК, так как он теперь в MediaItem) ...
 
 ## Обработка Ошибок
 
