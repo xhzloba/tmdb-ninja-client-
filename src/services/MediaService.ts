@@ -405,6 +405,80 @@ export class MediaService {
     }
   }
 
+  /**
+   * Получает список ТОЛЬКО последних добавленных фильмов.
+   * Использует параметры: cat=movie, sort=latest.
+   * @param page Номер страницы для пагинации (по умолчанию 1).
+   * @returns Промис с пагинированным списком ТОЛЬКО фильмов (PaginatedMovieResult).
+   * @throws {ApiError} В случае ошибки API.
+   */
+  async getLatestMovies(page: number = 1): Promise<PaginatedMovieResult> {
+    const endpoint = "";
+    const params = {
+      cat: "movie", // Запрашиваем только фильмы
+      sort: "latest",
+      page: page,
+    };
+
+    try {
+      const response = await this.#apiClient.get<MediaListResponse>(
+        endpoint,
+        params
+      );
+      // Ожидаем только фильмы, фильтруем и маппим
+      const items = response.results
+        .filter(isMovieMedia)
+        .map((movieData) => new Movie(movieData));
+
+      return {
+        items: items,
+        page: response.page,
+        totalPages: response.total_pages,
+        totalResults: response.total_results,
+      };
+    } catch (error) {
+      console.error(`Error fetching latest movies (page ${page}):`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Получает список ТОЛЬКО последних добавленных сериалов.
+   * Использует параметры: cat=tv, sort=latest.
+   * @param page Номер страницы для пагинации (по умолчанию 1).
+   * @returns Промис с пагинированным списком ТОЛЬКО сериалов (PaginatedTVShowResult).
+   * @throws {ApiError} В случае ошибки API.
+   */
+  async getLatestTvShows(page: number = 1): Promise<PaginatedTVShowResult> {
+    const endpoint = "";
+    const params = {
+      cat: "tv", // Запрашиваем только сериалы
+      sort: "latest",
+      page: page,
+    };
+
+    try {
+      const response = await this.#apiClient.get<MediaListResponse>(
+        endpoint,
+        params
+      );
+      // Ожидаем только сериалы, фильтруем и маппим
+      const items = response.results
+        .filter(isTVShowMedia)
+        .map((tvData) => new TVShow(tvData));
+
+      return {
+        items: items,
+        page: response.page,
+        totalPages: response.total_pages,
+        totalResults: response.total_results,
+      };
+    } catch (error) {
+      console.error(`Error fetching latest TV shows (page ${page}):`, error);
+      throw error;
+    }
+  }
+
   // Комментарий для "себя": Здесь можно добавить другие методы:
   // async searchMedia(query: string, page: number = 1): Promise<PaginatedMediaResult> { ... }
 }
