@@ -38,4 +38,24 @@ export class ImageConfig {
     // Комментарий для "себя": Просто возвращаем приватное статическое поле.
     return ImageConfig.#baseUrl;
   }
+
+  /**
+   * Строит полный URL для изображения.
+   * @param filePath - Путь к файлу изображения (может быть null).
+   * @param size - Запрашиваемый размер (например, 'w500', 'original').
+   * @returns Полный URL или null, если путь не предоставлен.
+   */
+  static buildImageUrl(filePath: string | null, size: string): string | null {
+    if (!filePath) {
+      return null;
+    }
+    // Убираем ведущий слеш из filePath, если он есть, т.к. baseUrl уже заканчивается на слеш
+    const cleanFilePath = filePath.startsWith("/")
+      ? filePath.substring(1)
+      : filePath;
+    return `${ImageConfig.getBaseUrl()}${size}/${cleanFilePath}`;
+  }
+
+  // Можно добавить методы для получения дефолтных размеров или списков доступных, если нужно
+  // static getAvailablePosterSizes(): string[] { return [...] }
 }

@@ -216,6 +216,34 @@ export abstract class MediaItem {
     return `${ImageConfig.getBaseUrl()}${size}/${path}`;
   }
 
+  /**
+   * Формирует полный URL для логотипа.
+   * Использует базовый URL из ImageConfig.
+   * @param filePath - Путь к файлу логотипа (из поля images.logos).
+   * @param size - Желаемый размер логотипа (например, 'w45', 'w92', 'w154', 'w185', 'w300', 'w500', 'original'). По умолчанию 'original'.
+   * @returns Полный URL логотипа или null, если путь не предоставлен.
+   */
+  getLogoUrl(
+    filePath: string | null,
+    size: string = "original"
+  ): string | null {
+    return ImageConfig.buildImageUrl(filePath, size);
+  }
+
+  /**
+   * Формирует полный URL для изображения профиля (актера/команды).
+   * Использует базовый URL из ImageConfig.
+   * @param filePath - Путь к файлу изображения профиля (profile_path).
+   * @param size - Желаемый размер (например, 'w45', 'w185', 'h632', 'original'). По умолчанию 'original'.
+   * @returns Полный URL изображения профиля или null, если путь не предоставлен.
+   */
+  getProfileUrl(
+    filePath: string | null,
+    size: string = "original"
+  ): string | null {
+    return ImageConfig.buildImageUrl(filePath, size);
+  }
+
   // Комментарий для "себя": Можно добавить общие методы,
   // например, для получения полного URL постера или бэкдропа.
   // getPosterUrl(size: string = 'w500'): string | null { ... }

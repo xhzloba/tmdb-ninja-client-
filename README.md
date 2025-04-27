@@ -205,6 +205,61 @@ fetchMovies();
 - `getDirectors(): CrewMember[]`: Возвращает массив режиссеров (требует `'credits'` в `appendToResponse`).
 - `getCast(): CastMember[]`: Возвращает массив актеров (требует `'credits'` в `appendToResponse`).
 
+#### Получение локализованных изображений (Постеры, Фоны, Логотипы)
+
+Стандартные методы `getPosterUrl()` и `getBackdropUrl()` используют основные пути `poster_path` и `backdrop_path` из ответа API. TMDB обычно возвращает в этих полях оригинальное или наиболее популярное изображение, независимо от параметра `language`.
+
+Чтобы получить доступ к **локализованным версиям** изображений (если они существуют), используйте следующий подход:
+
+1.  **Запросите детали с `appendToResponse: ['images']`:**
+    ```typescript
+    const details = await client.media.getMovieDetails(movieId, {
+      language: "ru",
+      appendToResponse: ["images", "credits"], // Важно добавить 'images'
+    });
+    ```
+2.  **Найдите нужное изображение в массиве `details.images`:**
+    Поле `images` будет содержать массивы `posters`, `backdrops` и `logos`. Каждый объект изображения в этих массивах имеет поле `iso_639_1` с кодом языка (`'ru'`, `'en'`, `null` и т.д.).
+
+    ```typescript
+    // Ищем русский постер
+    const russianPoster = details.images?.posters?.find(
+      (p) => p.iso_639_1 === "ru"
+    );
+    const russianPosterPath = russianPoster?.file_path;
+
+    // Ищем русский логотип
+    const russianLogo = details.images?.logos?.find(
+      (l) => l.iso_639_1 === "ru"
+    );
+    const russianLogoPath = russianLogo?.file_path;
+
+    // Ищем "нейтральный" постер (без языка), если русского нет
+    const neutralPosterPath = !russianPosterPath
+      ? details.images?.posters?.find((p) => p.iso_639_1 === null)?.file_path
+      : null;
+
+    // Если не нашли специфичный, можно взять основной
+    const posterPathToUse =
+      russianPosterPath || neutralPosterPath || details.posterPath;
+    ```
+
+3.  **Сформируйте URL:**
+
+    - Для логотипов: `const logoUrl = details.getLogoUrl(russianLogoPath, 'w154');`
+    - Для постеров/фонов (т.к. `getPosterUrl` не принимает путь): Используйте `ImageConfig.buildImageUrl` напрямую или метод из `MediaItem`, передав `filePath`.
+
+      ```typescript
+      import { ImageConfig } from "tmdb-xhzloba"; // Импортировать ImageConfig
+
+      const posterUrl = ImageConfig.buildImageUrl(posterPathToUse, "w500");
+      // или можно вызвать метод базового класса, если он доступен
+      // const posterUrl = details.buildImageUrl(posterPathToUse, 'w500'); // Если бы такой метод был в MediaItem
+      ```
+
+**Примечание для прокси `tmdb.kurwa-bober.ninja`:**
+_Теоретически, этот конкретный прокси-сервер **может быть** настроен так, чтобы он самостоятельно подставлял путь к локализованному изображению в основные поля `poster_path` и `backdrop_path`, если был передан соответствующий `language` в запросе. Если прокси это делает, то вызов `details.getPosterUrl()` или `details.getBackdropUrl()` может вернуть локализованный URL. Однако, это **нестандартное поведение**, и данная библиотека на него не полагается. Стандартный и надежный способ получения локализованных версий описан выше через `appendToResponse=images`._
+
 #### Специфичные Поля `TVShow`
 
 - `name: string`: Название сериала (локализованное).
