@@ -109,14 +109,31 @@
         color: white;
         border-color: #007bff;
       }
+      .view-controls select {
+        padding: 8px 10px;
+        margin-right: 10px;
+        min-width: 200px;
+      }
     </style>
   </head>
   <body>
     <h1>Популярные Фильмы и Сериалы (Vanilla JS + ESM Пример)</h1>
 
     <div class="view-controls">
-      <button id="show-popular-btn" class="active">Популярные</button>
-      <button id="show-latest-btn">Последние добавленные</button>
+      <label for="view-selector">Выберите список:</label>
+      <select id="view-selector">
+        <option value="getPopular" selected>Популярные (все)</option>
+        <option value="getLatest">Последние добавленные (все)</option>
+        <option value="getNowPlaying">Сейчас смотрят (все)</option>
+        <option value="getPopularMovies">Популярные (фильмы)</option>
+        <option value="getPopularTVShows">Популярные (сериалы)</option>
+        <option value="getLatestMovies">Последние добавленные (фильмы)</option>
+        <option value="getLatestTvShows">
+          Последние добавленные (сериалы)
+        </option>
+        <option value="getNowPlayingMovies">Сейчас смотрят (фильмы)</option>
+        <option value="getNowPlayingTvShows">Сейчас смотрят (сериалы)</option>
+      </select>
     </div>
 
     <div class="main-content">
@@ -178,6 +195,7 @@
       // а API_KEY - вторым, как требует функция.
       const client = createXhZlobaClient(undefined, API_KEY);
 
+      // --- Получение элементов DOM ---
       const mediaListElement = document.getElementById("media-list");
       const detailsContainerElement =
         document.getElementById("details-container");
@@ -186,16 +204,17 @@
       const loadMoreBtn = document.getElementById("load-more-btn");
       const errorMessageElement = document.getElementById("error-message");
       const listTitleElement = document.getElementById("list-title");
-      const showPopularBtn = document.getElementById("show-popular-btn");
-      const showLatestBtn = document.getElementById("show-latest-btn");
+      const viewSelector = document.getElementById("view-selector");
 
+      // --- Состояние приложения ---
       let currentPage = 1;
       let totalPages = 1;
       let isLoading = false;
       let isDetailsLoading = false;
       let mediaList = []; // Общий список для хранения загруженных Movie/TVShow объектов
-      let currentView = "popular"; // 'popular' или 'latest'
+      let currentMethodName = viewSelector ? viewSelector.value : "getPopular"; // Текущий выбранный метод
 
+      // --- Хелперы ---
       function showDetailsStatus(message, isError = false) {
         if (detailsStatusElement) {
           detailsStatusElement.textContent = message;
@@ -203,10 +222,12 @@
           detailsStatusElement.style.display = "block";
         }
         if (detailsContentElement) {
-          detailsContentElement.style.display = "none"; // Скрываем основной контент при статусе
+          detailsContentElement.style.display = "none";
+          detailsContentElement.innerHTML = ""; // Очищаем контент при показе статуса
         }
       }
 
+      // --- Загрузка и отображение ДЕТАЛЕЙ МЕДИА (с выводом всех полей) ---
       async function displayMediaDetails(mediaItemData) {
         if (
           !detailsContainerElement ||
@@ -216,24 +237,35 @@
           return;
 
         detailsContainerElement.style.display = "block";
-        detailsContentElement.innerHTML = ""; // Очищаем старые детали
         showDetailsStatus("Загрузка деталей...");
         isDetailsLoading = true;
 
         try {
           let details;
+          // Запрашиваем больше данных через appendToResponse
           let fetchOptions = {
             language: "ru",
-            appendToResponse: ["credits", "videos", "images", "external_ids"],
+            appendToResponse: [
+              "credits",
+              "videos",
+              "images",
+              "external_ids",
+              "keywords",
+              // 'recommendations', // Пока уберем, чтобы не перегружать
+              // 'similar',
+              // 'reviews',
+              // 'watch/providers',
+            ],
           };
-
-          // Определяем, что запрашивать - фильм или сериал
+          // Добавляем специфичные для типа поля
           if (mediaItemData instanceof Movie) {
+            fetchOptions.appendToResponse.push("release_dates");
             details = await client.media.getMovieDetails(
               mediaItemData.id,
               fetchOptions
             );
           } else if (mediaItemData instanceof TVShow) {
+            // Для TV пока нет уникальных appendToResponse, которые мы бы добавили
             details = await client.media.getTVShowDetails(
               mediaItemData.id,
               fetchOptions
@@ -244,70 +276,17 @@
             );
           }
 
-          // --- Человекочитаемая часть ---
-          let detailsHtml = `<h2>${details.title || details.name}</h2>`;
-          detailsHtml += `<img src="${details.getPosterUrl(
-            "w342"
-          )}" alt="Постер" style="max-width: 200px; float: left; margin-right: 15px;">`;
-          detailsHtml += `<p><strong>Описание:</strong> ${
-            details.overview || "Нет описания"
-          }</p>`;
-          detailsHtml += `<ul>`;
-          detailsHtml += `<li><strong>ID:</strong> ${details.id}</li>`;
-          detailsHtml += `<li><strong>Рейтинг TMDB:</strong> ${details.voteAverage.toFixed(
-            1
-          )} (${details.voteCount} голосов)</li>`;
-          if (details instanceof Movie) {
-            detailsHtml += `<li><strong>Дата выхода:</strong> ${
-              details.getFormattedReleaseDate("ru-RU") || "N/A"
-            }</li>`;
-            detailsHtml += `<li><strong>Длительность:</strong> ${
-              details.runtime ? details.runtime + " мин." : "N/A"
-            }</li>`;
-          } else if (details instanceof TVShow) {
-            detailsHtml += `<li><strong>Дата первого показа:</strong> ${
-              details.getFormattedFirstAirDate("ru-RU") || "N/A"
-            }</li>`;
-            detailsHtml += `<li><strong>Сезонов:</strong> ${
-              details.numberOfSeasons || "N/A"
-            }</li>`;
-            detailsHtml += `<li><strong>Эпизодов:</strong> ${
-              details.numberOfEpisodes || "N/A"
-            }</li>`;
-            detailsHtml += `<li><strong>Статус:</strong> ${
-              details.inProduction ? "В производстве" : "Завершен"
-            }</li>`;
-          }
-          // Доп. поля от прокси, если есть в детальном ответе
-          detailsHtml += `<li><strong>ID Кинопоиска (детали):</strong> ${
-            details.external_ids?.kinopoisk ||
-            mediaItemData.kinopoiskId ||
-            "N/A"
-          }</li>`;
-          detailsHtml += `<li><strong>ID IMDb (детали):</strong> ${
-            details.external_ids?.imdb_id || mediaItemData.imdbId || "N/A"
-          }</li>`;
+          console.log("Получены детали:", details);
 
-          // Актеры и режиссеры (если есть credits)
-          if (details.credits) {
-            const directors = details.getDirectors();
-            if (directors.length > 0) {
-              detailsHtml += `<li><strong>Режиссеры:</strong> ${directors
-                .map((d) => d.name)
-                .join(", ")}</li>`;
-            }
-            const cast = details.getCast(10); // Первые 10 актеров
-            if (cast.length > 0) {
-              detailsHtml += `<li><strong>В ролях:</strong> ${cast
-                .map((c) => c.name)
-                .join(", ")}</li>`;
-            }
-          }
-          detailsHtml += `</ul>`;
+          // --- Просто выводим весь объект details как JSON ---
+          let detailsHtml = `<h2>Детали объекта для ID: ${details.id}</h2>`;
+          detailsHtml += `<pre style="white-space: pre-wrap; word-wrap: break-word; background: #fff; border: 1px solid #ccc; padding: 10px; max-height: 600px; overflow-y: auto;">
+${JSON.stringify(details, null, 2)}
+</pre>`;
 
           detailsContentElement.innerHTML = detailsHtml;
-          detailsStatusElement.style.display = "none"; // Скрываем статус
-          detailsContentElement.style.display = "block"; // Показываем контент
+          detailsStatusElement.style.display = "none";
+          detailsContentElement.style.display = "block";
         } catch (error) {
           console.error(`Ошибка загрузки деталей:`, error);
           let msg = "Неизвестная ошибка загрузки деталей";
@@ -322,82 +301,85 @@
         }
       }
 
-      // --- Функция загрузки и отображения данных ---
-      async function fetchAndDisplay(page = 1) {
+      // --- Функция загрузки и отображения СПИСКА МЕДИА ---
+      async function fetchAndDisplay(methodName, page = 1) {
         if (isLoading) return;
         isLoading = true;
         errorMessageElement.style.display = "none";
         if (page === 1) {
-          mediaListElement.innerHTML = ""; // Очищаем список только для первой страницы
-          mediaList = []; // Сбрасываем общий список
-          currentPage = 1;
+          mediaListElement.innerHTML = "";
+          mediaList = [];
+          currentPage = 1; // Сброс страницы при смене метода
         }
         if (loadMoreBtn) loadMoreBtn.textContent = "Загрузка...";
 
+        // Обновляем заголовок в соответствии с выбранным методом
+        const selectedOption = viewSelector.options[viewSelector.selectedIndex];
+        listTitleElement.textContent = selectedOption.text;
+
         try {
           let result;
-          // Выбираем, какой метод вызывать в зависимости от текущего вида
-          if (currentView === "popular") {
-            listTitleElement.textContent = "Популярные фильмы и сериалы";
-            result = await client.media.getPopular(page);
-          } else if (currentView === "latest") {
-            listTitleElement.textContent =
-              "Последние добавленные фильмы и сериалы";
-            result = await client.media.getLatest(page);
+          // Динамически вызываем нужный метод клиента
+          if (typeof client.media[methodName] === "function") {
+            console.log(`Вызов client.media.${methodName}(${page})`);
+            result = await client.media[methodName](page);
           } else {
-            throw new Error("Неизвестный тип отображения: " + currentView);
+            throw new Error(`Метод client.media.${methodName} не найден!`);
           }
 
-          console.log(`Loaded ${currentView} page ${page}:`, result);
+          console.log(`Loaded ${methodName} page ${page}:`, result);
           totalPages = result.totalPages;
           currentPage = result.page;
 
-          // Добавляем новые элементы в общий список и DOM
-          result.items.forEach((item) => {
-            console.log("Processing item:", item); // Оставляем лог для kinopoisk_id
-            if (item instanceof Movie || item instanceof TVShow) {
-              mediaList.push(item); // Добавляем в общий список
-              const li = document.createElement("li");
-              li.setAttribute("data-media-id", item.id.toString());
-              li.innerHTML = `
-                <img src="${item.getPosterUrl(
-                  "w92"
-                )}" alt="Постер" loading="lazy">
-                <div>
-                  <strong>${item.title || item.name}</strong> (${
-                item instanceof Movie ? "Фильм" : "Сериал"
-              }, ${
-                item instanceof Movie
-                  ? item.releaseDate?.substring(0, 4) || "N/A"
-                  : item.firstAirDate?.substring(0, 4) || "N/A"
-              })
-                  <br>
-                  <small>TMDB: ${item.voteAverage.toFixed(1)} | KP ID: ${
-                item.kinopoiskId || "N/A"
-              }</small>
-                </div>
-              `;
-              mediaListElement.appendChild(li);
-            } else {
-              console.warn("Получен элемент неизвестного типа:", item);
-            }
-          });
+          // Добавляем элементы в DOM и в массив
+          if (result && result.items) {
+            result.items.forEach((item) => {
+              if (item instanceof Movie || item instanceof TVShow) {
+                mediaList.push(item);
+                const li = document.createElement("li");
+                li.setAttribute("data-media-id", item.id.toString());
+                const year =
+                  item instanceof Movie
+                    ? item.releaseDate?.substring(0, 4) || "N/A"
+                    : item.firstAirDate?.substring(0, 4) || "N/A";
+                li.innerHTML = `
+                          <img src="${item.getPosterUrl(
+                            "w92"
+                          )}" alt="" loading="lazy" style="width:40px; height:60px; object-fit:cover;">
+                          <div style="display: inline-block; vertical-align: top; margin-left: 5px;">
+                          <strong>${item.title || item.name}</strong> (${
+                  item instanceof Movie ? "Фильм" : "Сериал"
+                }, ${year})
+                          <br>
+                          <small>TMDB: ${
+                            item.voteAverage?.toFixed(1) ?? "N/A"
+                          } | KP ID: ${item.kinopoiskId || "N/A"}</small>
+                          </div>
+                      `;
+                mediaListElement.appendChild(li);
+              } else {
+                console.warn("Получен элемент не Movie/TVShow:", item);
+              }
+            });
+          } else {
+            console.warn("Результат API не содержит поля items:", result);
+          }
 
-          // Управляем кнопкой "Загрузить еще"
+          // Кнопка "Загрузить еще"
           if (loadMoreBtn) {
             loadMoreBtn.style.display =
               currentPage < totalPages ? "block" : "none";
             loadMoreBtn.textContent = "Загрузить еще...";
           }
         } catch (error) {
-          console.error("Ошибка при загрузке данных:", error);
+          console.error(`Ошибка при загрузке ${methodName}:`, error);
           let msg = "Неизвестная ошибка";
           if (error instanceof ApiError) {
             msg = `API Ошибка (${error.statusCode}): ${
               error.apiMessage || error.message
             }`;
           }
-          errorMessageElement.textContent = `Не удалось загрузить данные. ${msg}`;
+          errorMessageElement.textContent = `Не удалось загрузить данные (${methodName}). ${msg}`;
           errorMessageElement.style.display = "block";
           if (loadMoreBtn) loadMoreBtn.style.display = "none";
         } finally {
@@ -415,7 +397,6 @@
             const mediaIdStr = clickedLi.getAttribute("data-media-id");
             if (mediaIdStr) {
               const mediaId = parseInt(mediaIdStr, 10);
-              // Ищем объект в нашем общем массиве
               const mediaItemData = mediaList.find(
                 (item) => item.id === mediaId
               );
@@ -425,9 +406,7 @@
               ) {
                 displayMediaDetails(mediaItemData);
               } else {
-                console.warn(
-                  "Clicked item not found or invalid type in mediaList"
-                );
+                console.warn("Clicked item not found or invalid type");
                 showDetailsStatus(
                   "Не удалось найти данные для этого элемента.",
                   true
@@ -441,40 +420,36 @@
       // --- Обработчик для кнопки "Загрузить еще" ---
       if (loadMoreBtn) {
         loadMoreBtn.addEventListener("click", () => {
-          // Загружаем следующую страницу для ТЕКУЩЕГО вида
           if (!isLoading && currentPage < totalPages) {
-            fetchAndDisplay(currentPage + 1);
+            // Загружаем следующую страницу для ТЕКУЩЕГО метода
+            fetchAndDisplay(currentMethodName, currentPage + 1);
           }
         });
       }
 
-      // --- Обработчики для кнопок переключения вида ---
-      if (showPopularBtn) {
-        showPopularBtn.addEventListener("click", () => {
-          if (currentView !== "popular" && !isLoading) {
-            currentView = "popular";
-            showPopularBtn.classList.add("active");
-            showLatestBtn.classList.remove("active");
-            detailsContainerElement.style.display = "none"; // Скрываем детали при смене вида
-            fetchAndDisplay(1); // Загружаем первую страницу нового вида
-          }
-        });
-      }
-
-      if (showLatestBtn) {
-        showLatestBtn.addEventListener("click", () => {
-          if (currentView !== "latest" && !isLoading) {
-            currentView = "latest";
-            showLatestBtn.classList.add("active");
-            showPopularBtn.classList.remove("active");
-            detailsContainerElement.style.display = "none"; // Скрываем детали при смене вида
-            fetchAndDisplay(1); // Загружаем первую страницу нового вида
+      // --- Обработчик для выбора метода ---
+      if (viewSelector) {
+        viewSelector.addEventListener("change", (event) => {
+          const newMethodName = event.target.value;
+          if (newMethodName !== currentMethodName && !isLoading) {
+            console.log(`Смена вида на: ${newMethodName}`);
+            currentMethodName = newMethodName;
+            detailsContainerElement.style.display = "none"; // Скрываем детали
+            fetchAndDisplay(currentMethodName, 1); // Загружаем первую страницу нового вида
           }
         });
       }
 
       // --- Запуск ---
-      fetchAndDisplay(1); // Загружаем первую страницу (по умолчанию 'popular') при старте
+      if (viewSelector) {
+        // Устанавливаем начальное состояние из селектора
+        currentMethodName = viewSelector.value;
+        fetchAndDisplay(currentMethodName, 1); // Загружаем первую страницу выбранного вида
+      } else {
+        console.error("Не найден элемент #view-selector");
+        // Можно загрузить что-то по умолчанию, если селектор не найден
+        // fetchAndDisplay('getPopular', 1);
+      }
     </script>
   </body>
 </html>

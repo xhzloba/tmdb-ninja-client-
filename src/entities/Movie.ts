@@ -13,9 +13,6 @@ import {
   SimilarResponse,
   ReviewsResponse,
   ImagesResponse,
-  // Добавляем типы для методов getDirectors/getCast
-  CrewMember,
-  CastMember,
 } from "../types";
 import { MediaItem } from "./MediaItem";
 
@@ -188,7 +185,39 @@ export class Movie extends MediaItem {
     }
   }
 
-  // Комментарий для "себя": Переопределение метода или добавление
-  // специфичной для фильма логики, если потребуется.
-  // Например, getFormattedReleaseDate(): string { ... }
+  get tagline(): string | null | undefined {
+    // Переопределяем, если есть только у Movie (если tagline убрали из MediaItem)
+    // Если tagline в MediaItem, эта перегрузка не нужна
+    return super.tagline; // Или this.#tagline, если он только здесь
+  }
+
+  /**
+   * Возвращает объект, представляющий Movie для JSON-сериализации.
+   * Расширяет toJSON из MediaItem, добавляя специфичные для фильма поля.
+   */
+  toJSON() {
+    const mediaItemJSON = super.toJSON(); // Получаем базовый JSON
+    const movieJSON: Record<string, any> = {
+      ...mediaItemJSON, // Копируем все поля из MediaItem
+      // --- Специфичные поля Movie ---
+      title: this.title,
+      originalTitle: this.originalTitle,
+      releaseDate: this.releaseDate,
+      runtime: this.runtime,
+      budget: this.budget,
+      revenue: this.revenue,
+      // Добавляем результат форматированной даты
+      _formattedReleaseDate_RU: this.getFormattedReleaseDate("ru-RU"),
+      // Добавляем поле mediaType для легкой идентификации
+      _mediaType: "movie",
+    };
+
+    // Удаляем ключи со значением undefined
+    for (const key in movieJSON) {
+      if (movieJSON[key] === undefined) {
+        delete movieJSON[key];
+      }
+    }
+    return movieJSON;
+  }
 }

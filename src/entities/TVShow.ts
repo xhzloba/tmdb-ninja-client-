@@ -97,7 +97,7 @@ export class TVShow extends MediaItem {
     return this.#inProduction;
   }
   get languages(): string[] | undefined {
-    return this.#languages ? [...this.#languages] : undefined;
+    return this.#languages;
   }
   get networks(): ProductionCompany[] | undefined {
     return this.#networks ? [...this.#networks] : undefined;
@@ -150,7 +150,6 @@ export class TVShow extends MediaItem {
       if (isNaN(date.getTime())) {
         return null;
       }
-      // Корректируем дату, чтобы избежать смещения часовых поясов при парсинге YYYY-MM-DD
       const utcDate = new Date(
         Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
       );
@@ -165,6 +164,43 @@ export class TVShow extends MediaItem {
     }
   }
 
-  // Комментарий для "себя": Можно добавить методы для работы с сезонами,
-  // например, getNumberOfSeasons(): number | undefined { ... }
+  /**
+   * Возвращает объект, представляющий TVShow для JSON-сериализации.
+   * Расширяет toJSON из MediaItem, добавляя специфичные для сериала поля.
+   */
+  toJSON() {
+    const mediaItemJSON = super.toJSON(); // Получаем базовый JSON
+    const tvShowJSON: Record<string, any> = {
+      ...mediaItemJSON, // Копируем все поля из MediaItem
+      // --- Специфичные поля TVShow ---
+      name: this.name,
+      originalName: this.originalName,
+      firstAirDate: this.firstAirDate,
+      lastAirDate: this.lastAirDate,
+      lastEpisodeToAir: this.lastEpisodeToAir,
+      nextEpisodeToAir: this.nextEpisodeToAir,
+      numberOfEpisodes: this.numberOfEpisodes,
+      numberOfSeasons: this.numberOfSeasons,
+      originCountry: this.originCountry,
+      seasons: this.seasons,
+      type: this.type,
+      episodeRunTime: this.episodeRunTime,
+      inProduction: this.inProduction,
+      languages: this.languages,
+      networks: this.networks,
+      createdBy: this.createdBy,
+      // Добавляем результат форматированной даты
+      _formattedFirstAirDate_RU: this.getFormattedFirstAirDate("ru-RU"),
+      // Добавляем поле mediaType для легкой идентификации
+      _mediaType: "tv",
+    };
+
+    // Удаляем ключи со значением undefined
+    for (const key in tvShowJSON) {
+      if (tvShowJSON[key] === undefined) {
+        delete tvShowJSON[key];
+      }
+    }
+    return tvShowJSON;
+  }
 }

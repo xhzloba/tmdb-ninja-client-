@@ -149,8 +149,9 @@ export abstract class MediaItem {
     return this.#backdropPath;
   }
   get genreIds(): number[] {
-    return [...this.#genreIds];
-  } // Возвращаем копию массива
+    // Проверяем, что #genreIds - это массив, прежде чем копировать
+    return Array.isArray(this.#genreIds) ? [...this.#genreIds] : [];
+  } // Возвращаем копию массива или пустой массив
   get originalLanguage(): string {
     return this.#originalLanguage;
   }
@@ -302,8 +303,59 @@ export abstract class MediaItem {
     return ImageConfig.buildImageUrl(filePath, size);
   }
 
-  // Комментарий для "себя": Можно добавить общие методы,
-  // например, для получения полного URL постера или бэкдропа.
-  // getPosterUrl(size: string = 'w500'): string | null { ... }
-  // getBackdropUrl(size: string = 'original'): string | null { ... }
+  /**
+   * Возвращает объект, представляющий MediaItem для JSON-сериализации.
+   * Вызывается автоматически `JSON.stringify()`.
+   * Включает все доступные поля (базовые и детальные, если загружены).
+   */
+  toJSON() {
+    const obj: Record<string, any> = {
+      // --- Базовые поля ---
+      id: this.id,
+      adult: this.adult,
+      backdropPath: this.backdropPath,
+      genreIds: this.genreIds,
+      originalLanguage: this.originalLanguage,
+      overview: this.overview,
+      popularity: this.popularity,
+      posterPath: this.posterPath,
+      voteAverage: this.voteAverage,
+      voteCount: this.voteCount,
+      names: this.names,
+      pgRating: this.pgRating,
+      releaseQuality: this.releaseQuality,
+      kinopoiskId: this.kinopoiskId,
+      kpRating: this.kpRating,
+      imdbId: this.imdbId,
+      imdbRating: this.imdbRating,
+      status: this.status,
+      lastAirDate: this.lastAirDate,
+      // --- Детальные поля (если есть) ---
+      genres: this.genres,
+      homepage: this.homepage,
+      productionCompanies: this.productionCompanies,
+      productionCountries: this.productionCountries,
+      spokenLanguages: this.spokenLanguages,
+      tagline: this.tagline,
+      releaseDates: this.releaseDates,
+      keywords: this.keywords,
+      alternativeTitles: this.alternativeTitles,
+      contentRatings: this.contentRatings,
+      credits: this.credits,
+      images: this.images,
+      // --- Добавим результаты некоторых полезных методов ---
+      _posterUrl_w500: this.getPosterUrl("w500"),
+      _backdropUrl_w780: this.getBackdropUrl("w780"),
+      _directors: this.getDirectors(),
+      _cast_first10: this.getCast().slice(0, 10), // Пример: первые 10 актеров
+    };
+
+    // Удаляем ключи со значением undefined, чтобы JSON был чище
+    for (const key in obj) {
+      if (obj[key] === undefined) {
+        delete obj[key];
+      }
+    }
+    return obj;
+  }
 }
