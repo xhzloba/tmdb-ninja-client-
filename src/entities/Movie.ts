@@ -152,6 +152,42 @@ export class Movie extends MediaItem {
     return this.#images;
   }
 
+  // --- Методы для удобного доступа к данным ---
+
+  /**
+   * Возвращает дату релиза в локализованном, читаемом формате.
+   * @param locales - Строка или массив строк с языковыми тегами BCP 47 (например, 'ru-RU', 'en-US'). По умолчанию используется локаль браузера.
+   * @param options - Объект с опциями форматирования для Intl.DateTimeFormat (например, { year: 'numeric', month: 'long', day: 'numeric' }).
+   * @returns Отформатированная строка даты или null, если дата релиза отсутствует.
+   */
+  getFormattedReleaseDate(
+    locales?: string | string[],
+    options: Intl.DateTimeFormatOptions = {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }
+  ): string | null {
+    if (!this.releaseDate) {
+      return null;
+    }
+    try {
+      const date = new Date(this.releaseDate);
+      if (isNaN(date.getTime())) {
+        return null;
+      }
+      // Корректируем дату, чтобы избежать смещения часовых поясов при парсинге YYYY-MM-DD
+      // Создаем дату в UTC, чтобы toLocaleDateString использовала правильную дату
+      const utcDate = new Date(
+        Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+      );
+      return utcDate.toLocaleDateString(locales, options);
+    } catch (error) {
+      console.error("Error formatting release date:", this.releaseDate, error);
+      return this.releaseDate; // Fallback
+    }
+  }
+
   // Комментарий для "себя": Переопределение метода или добавление
   // специфичной для фильма логики, если потребуется.
   // Например, getFormattedReleaseDate(): string { ... }

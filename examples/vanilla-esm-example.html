@@ -213,14 +213,15 @@
                             <img src="${posterUrl}" alt="" onerror="this.style.display='none'" style="flex-shrink: 0; width: 60px; height: auto;">
                             <div style="margin-left: 10px;">
                                 <strong>${item.title} (${
-                  item.releaseDate?.substring(0, 4) || "N/A"
+                  item.getFormattedReleaseDate("ru-RU", { year: "numeric" }) ||
+                  "N/A"
                 }) [Фильм]</strong><br>
                                 <small>
                                     <i>${
                                       item.names?.[1] ||
                                       item.originalTitle ||
                                       ""
-                                    }</i><br> <!-- Второе имя или оригинал -->
+                                    }</i><br>
                                     Качество: ${
                                       item.releaseQuality || "N/A"
                                     } | PG: ${item.pgRating ?? "N/A"}<br>
@@ -247,14 +248,15 @@
                             <img src="${posterUrl}" alt="" onerror="this.style.display='none'" style="flex-shrink: 0; width: 60px; height: auto;">
                             <div style="margin-left: 10px;">
                                 <strong>${item.name} (${
-                  item.firstAirDate?.substring(0, 4) || "N/A"
+                  item.getFormattedFirstAirDate("ru-RU", { year: "numeric" }) ||
+                  "N/A"
                 }) [Сериал]</strong><br>
                                 <small>
                                      <i>${
                                        item.names?.[1] ||
                                        item.originalName ||
                                        ""
-                                     }</i><br> <!-- Второе имя или оригинал -->
+                                     }</i><br>
                                     Качество: ${
                                       item.releaseQuality || "N/A"
                                     } | PG: ${item.pgRating ?? "N/A"}<br>
@@ -477,7 +479,7 @@
           // --- Типо-специфичная основная информация ---
           if (mediaType === "movie" && details instanceof Movie) {
             detailsHtml += `<li><strong>Дата релиза:</strong> ${
-              details.releaseDate || "N/A"
+              details.getFormattedReleaseDate("ru-RU") || "N/A"
             }</li>`;
             detailsHtml += `<li><strong>Продолжительность:</strong> ${
               details.runtime ? details.runtime + " мин." : "N/A"
@@ -497,7 +499,7 @@
               }</li>`;
           } else if (mediaType === "tv" && details instanceof TVShow) {
             detailsHtml += `<li><strong>Первый эфир:</strong> ${
-              details.firstAirDate || "N/A"
+              details.getFormattedFirstAirDate("ru-RU") || "N/A"
             }</li>`;
             detailsHtml += `<li><strong>Последний эфир:</strong> ${
               details.lastEpisodeToAir?.air_date || "N/A"

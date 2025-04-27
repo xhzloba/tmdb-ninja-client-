@@ -45,13 +45,10 @@ export class TVShow extends MediaItem {
    */
   constructor(data: TVShowMedia) {
     super(data);
-    // Инициализация специфичных для сериала полей.
     this.#name = data.name;
     this.#originalName = data.original_name;
     this.#firstAirDate = data.first_air_date;
     this.#originCountry = data.origin_country;
-
-    // Инициализация детальных полей сериала (если они есть)
     this.#createdBy = data.created_by;
     this.#episodeRunTime = data.episode_run_time;
     this.#inProduction = data.in_production;
@@ -127,6 +124,45 @@ export class TVShow extends MediaItem {
   }
   get contentRatings(): ContentRatingsResponse | undefined {
     return this.#contentRatings;
+  }
+
+  // --- Методы для удобного доступа к данным ---
+
+  /**
+   * Возвращает дату первого эфира в локализованном, читаемом формате.
+   * @param locales - Строка или массив строк с языковыми тегами BCP 47 (например, 'ru-RU', 'en-US'). По умолчанию используется локаль браузера.
+   * @param options - Объект с опциями форматирования для Intl.DateTimeFormat (например, { year: 'numeric', month: 'long', day: 'numeric' }).
+   * @returns Отформатированная строка даты или null, если дата первого эфира отсутствует.
+   */
+  getFormattedFirstAirDate(
+    locales?: string | string[],
+    options: Intl.DateTimeFormatOptions = {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }
+  ): string | null {
+    if (!this.firstAirDate) {
+      return null;
+    }
+    try {
+      const date = new Date(this.firstAirDate);
+      if (isNaN(date.getTime())) {
+        return null;
+      }
+      // Корректируем дату, чтобы избежать смещения часовых поясов при парсинге YYYY-MM-DD
+      const utcDate = new Date(
+        Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+      );
+      return utcDate.toLocaleDateString(locales, options);
+    } catch (error) {
+      console.error(
+        "Error formatting first air date:",
+        this.firstAirDate,
+        error
+      );
+      return this.firstAirDate; // Fallback
+    }
   }
 
   // Комментарий для "себя": Можно добавить методы для работы с сезонами,

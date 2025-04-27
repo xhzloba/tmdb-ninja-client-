@@ -291,7 +291,11 @@ _(Смотрите `examples/vanilla-esm-example.html` для более пол�
 
 #### Специфичные Методы `Movie`
 
-- _Нет специфичных методов (методы для команды теперь в `MediaItem`)._
+- `getFormattedReleaseDate(locales?: string | string[], options?: Intl.DateTimeFormatOptions): string | null`:
+  - Возвращает дату релиза в локализованном, читаемом формате.
+  - Использует `Intl.DateTimeFormat`. По умолчанию выводит дату в формате "день месяц год" для локали браузера.
+  - Пример: `movie.getFormattedReleaseDate('ru-RU')` -> `"15 июня 2024 г."`
+  - Пример: `movie.getFormattedReleaseDate('en-US', { dateStyle: 'short' })` -> `"6/15/24"`
 
 #### Получение локализованных изображений (Постеры, Фоны, Логотипы)
 
@@ -354,10 +358,12 @@ _Теоретически, этот конкретный прокси-серве
 - `name: string`, `originalName: string`, `firstAirDate: string`.
 - **Детальные поля**: `originCountry: string[]`, `numberOfEpisodes: number`, `numberOfSeasons: number`, `inProduction: boolean`, `languages: string[]`, `lastEpisodeToAir: Episode | null`, `nextEpisodeToAir: Episode | null`, `networks: ProductionCompany[]`, `type: string`, `seasons: Season[]`, `createdBy: CastMember[]`, `episodeRunTime: number[]` (доступны через геттеры).
 
-#### Поля из `appendToResponse` (Доступны через геттеры на `Movie` и `TVShow`, если запрошены)
+#### Специфичные Методы `TVShow`
 
-// Переносим описание этих полей в раздел MediaItem, здесь можно убрать дублирование
-// ... (УДАЛИТЬ ЭТОТ ДЛИННЫЙ СПИСОК, так как он теперь в MediaItem) ...
+- `getFormattedFirstAirDate(locales?: string | string[], options?: Intl.DateTimeFormatOptions): string | null`:
+  - Возвращает дату первого эфира в локализованном, читаемом формате.
+  - Аналогичен `getFormattedReleaseDate` для фильмов.
+  - Пример: `tvShow.getFormattedFirstAirDate('ru-RU')` -> `"4 декабря 2011 г."`
 
 ## Обработка Ошибок
 
