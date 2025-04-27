@@ -112,6 +112,17 @@
       </div>
       <div id="tv-list-container">
         <ul id="media-list"></ul>
+        <button
+          id="load-more-btn"
+          style="
+            display: none;
+            margin-top: 15px;
+            padding: 8px 15px;
+            cursor: pointer;
+          "
+        >
+          Загрузить еще...
+        </button>
         <div id="status-messages" class="status"></div>
         <!-- Кнопка "Загрузить еще" здесь не реализована для простоты -->
       </div>
@@ -148,9 +159,13 @@
       const statusMessagesElement = document.getElementById("status-messages");
       const detailsContainerElement =
         document.getElementById("details-container");
+      const loadMoreBtn = document.getElementById("load-more-btn"); // Получаем кнопку
 
-      // Массив для хранения загруженных объектов медиа
+      // Массив для хранения загруженных объектов медиа и пагинации
       let mediaList = [];
+      let currentPage = 0;
+      let totalPages = 0;
+      let isLoading = false; // Флаг для предотвращения параллельных запросов
 
       // --- Хелперы ---
       function showStatus(message, isError = false) {
@@ -167,18 +182,25 @@
       }
 
       // --- Загрузка и отображение списка ФИЛЬМОВ и СЕРИАЛОВ ---
-      async function fetchAndDisplayMedia() {
-        showStatus("Загрузка списка медиа...");
+      async function fetchAndDisplayMedia(page = 1) {
+        // Принимает страницу
+        if (isLoading) return;
+        isLoading = true;
+        showStatus(`Загрузка страницы ${page}...`);
+        if (loadMoreBtn) loadMoreBtn.style.display = "none"; // Прячем кнопку на время загрузки
+
         try {
-          // Используем новый метод getPopular
-          const result = await client.media.getPopular(1); // Загружаем 1 страницу популярных
+          const result = await client.media.getPopular(page);
+
+          if (page === 1 && mediaListElement) {
+            mediaListElement.innerHTML = ""; // Очищаем только для первой страницы
+            mediaList = [];
+          }
 
           if (mediaListElement) {
-            mediaListElement.innerHTML = ""; // Очищаем
-            mediaList = []; // Очищаем массив данных
-
             result.items.forEach((item) => {
-              mediaList.push(item); // Сохраняем объект
+              console.log("Processing item:", item);
+              mediaList.push(item); // Добавляем в массив
               const li = document.createElement("li");
               const posterUrl = item.getPosterUrl("w92") || "";
               let itemHtml = "";
@@ -187,19 +209,32 @@
                 li.setAttribute("data-media-id", String(item.id));
                 li.setAttribute("data-media-type", "movie");
                 itemHtml = `
-                        <div style="display: flex; align-items: center;">
-                            <img src="${posterUrl}" alt="" onerror="this.style.display='none'" style="flex-shrink: 0;">
+                        <div style="display: flex; align-items: flex-start;">
+                            <img src="${posterUrl}" alt="" onerror="this.style.display='none'" style="flex-shrink: 0; width: 60px; height: auto;">
                             <div style="margin-left: 10px;">
                                 <strong>${item.title} (${
                   item.releaseDate?.substring(0, 4) || "N/A"
                 }) [Фильм]</strong><br>
                                 <small>
+                                    <i>${
+                                      item.names?.[1] ||
+                                      item.originalTitle ||
+                                      ""
+                                    }</i><br> <!-- Второе имя или оригинал -->
                                     Качество: ${
                                       item.releaseQuality || "N/A"
-                                    }<br>
-                                    KP ID: ${
-                                      item.kinopoisk_id || "N/A"
-                                    } (Рейтинг: ${item.kp_rating || "N/A"})
+                                    } | PG: ${item.pgRating ?? "N/A"}<br>
+                                    KP: ${item.kinopoiskId || "N/A"} (Рейт: ${
+                  item.kpRating || "N/A"
+                })<br>
+                                    IMDb: ${item.imdbId || "N/A"} (Рейт: ${
+                  item.imdbRating || "N/A"
+                })
+                                    ${
+                                      item.lastAirDate
+                                        ? `<br>Last Air: ${item.lastAirDate}`
+                                        : ""
+                                    }
                                 </small>
                             </div>
                         </div>
@@ -208,34 +243,61 @@
                 li.setAttribute("data-media-id", String(item.id));
                 li.setAttribute("data-media-type", "tv");
                 itemHtml = `
-                        <div style="display: flex; align-items: center;">
-                            <img src="${posterUrl}" alt="" onerror="this.style.display='none'" style="flex-shrink: 0;">
+                        <div style="display: flex; align-items: flex-start;">
+                            <img src="${posterUrl}" alt="" onerror="this.style.display='none'" style="flex-shrink: 0; width: 60px; height: auto;">
                             <div style="margin-left: 10px;">
                                 <strong>${item.name} (${
                   item.firstAirDate?.substring(0, 4) || "N/A"
                 }) [Сериал]</strong><br>
                                 <small>
+                                     <i>${
+                                       item.names?.[1] ||
+                                       item.originalName ||
+                                       ""
+                                     }</i><br> <!-- Второе имя или оригинал -->
                                     Качество: ${
                                       item.releaseQuality || "N/A"
-                                    }<br>
-                                    KP ID: ${
-                                      item.kinopoisk_id || "N/A"
-                                    } (Рейтинг: ${item.kp_rating || "N/A"})
+                                    } | PG: ${item.pgRating ?? "N/A"}<br>
+                                    KP: ${item.kinopoiskId || "N/A"} (Рейт: ${
+                  item.kpRating || "N/A"
+                })<br>
+                                    IMDb: ${item.imdbId || "N/A"} (Рейт: ${
+                  item.imdbRating || "N/A"
+                })
+                                    ${
+                                      item.lastAirDate
+                                        ? `<br>Last Air: ${item.lastAirDate}`
+                                        : ""
+                                    }
                                 </small>
                             </div>
                         </div>
                     `;
               } else {
-                // Пропускаем неизвестный тип, если вдруг придет
                 return;
               }
               li.innerHTML = itemHtml;
-              mediaListElement.appendChild(li);
+              mediaListElement.appendChild(li); // Добавляем в конец списка
             });
           }
-          showStatus(""); // Очищаем статус
+
+          // Обновляем пагинацию
+          currentPage = result.page;
+          totalPages = result.totalPages;
+
+          showStatus(""); // Очищаем статус загрузки
+
+          // Показываем кнопку, если есть еще страницы
+          if (currentPage < totalPages && loadMoreBtn) {
+            loadMoreBtn.style.display = "block";
+          } else {
+            if (loadMoreBtn) loadMoreBtn.style.display = "none";
+            if (currentPage >= totalPages && mediaList.length > 0) {
+              showStatus("Все элементы загружены.");
+            }
+          }
         } catch (error) {
-          console.error("Ошибка загрузки списка:", error);
+          console.error(`Ошибка загрузки страницы ${page}:`, error);
           let msg = "Неизвестная ошибка списка";
           if (error instanceof ApiError) {
             msg = `API Ошибка списка: ${error.message}`;
@@ -243,6 +305,10 @@
             msg = `Ошибка списка: ${error.message}`;
           }
           showStatus(msg, true);
+          // Можно сбросить пагинацию при ошибке или оставить как есть
+          if (loadMoreBtn) loadMoreBtn.style.display = "none";
+        } finally {
+          isLoading = false; // Снимаем флаг загрузки
         }
       }
 
@@ -319,9 +385,34 @@
             detailsHtml += `<span><img src="${backdropUrl}" alt="Фон" style="height: 120px; width: auto; border: 1px solid #ccc;"><br><small>Основной фон</small></span>`;
           }
           // Логотип (если есть)
-          const logo = details.images?.logos?.[0];
-          if (logo?.file_path) {
-            const logoUrl = details.getLogoUrl(logo.file_path, "w154");
+          console.log("--- Logo Search Start ---"); // Лог начала поиска
+          console.log("Logos array from API:", details.images?.logos); // Лог всего массива логотипов
+
+          // Ищем нужный логотип: сначала русский, потом без языка, потом первый попавшийся
+          let logoToShow = null;
+          if (details.images?.logos && details.images.logos.length > 0) {
+            logoToShow = details.images.logos.find(
+              (logo) => logo.iso_639_1 === "ru"
+            );
+            console.log("Found Russian logo:", logoToShow); // Лог результата поиска русского
+
+            if (!logoToShow) {
+              logoToShow = details.images.logos.find(
+                (logo) => logo.iso_639_1 === null
+              );
+              console.log("Found Neutral logo:", logoToShow); // Лог результата поиска нейтрального
+            }
+            if (!logoToShow) {
+              logoToShow = details.images.logos[0]; // Берем первый, если других нет
+              console.log("Using First logo as fallback:", logoToShow); // Лог результата fallback
+            }
+          }
+          console.log("Final logo selected:", logoToShow);
+          console.log("--- Logo Search End ---");
+
+          // Отображаем найденный логотип (если он есть и имеет путь)
+          if (logoToShow?.file_path) {
+            const logoUrl = details.getLogoUrl(logoToShow.file_path, "w154");
             if (logoUrl) {
               detailsHtml += `<span><img src="${logoUrl}" alt="Логотип" style="height: 50px; width: auto; background: #ddd; padding: 5px; border: 1px solid #ccc;"><br><small>Логотип</small></span>`;
             }
@@ -445,16 +536,16 @@
           )}/10 (${details.voteCount} голосов)</li>`;
           // Поля из прокси (берем из объекта списка)
           detailsHtml += `<li><strong>Kinopoisk (из списка):</strong> ID ${
-            mediaItemData.kinopoisk_id || "N/A"
-          } (Рейтинг: ${mediaItemData.kp_rating || "N/A"})</li>`;
+            mediaItemData.kinopoiskId || "N/A"
+          } (Рейтинг: ${mediaItemData.kpRating || "N/A"})</li>`;
           detailsHtml += `<li><strong>IMDb (из списка):</strong> ID ${
-            mediaItemData.imdb_id || "N/A"
-          } (Рейтинг: ${mediaItemData.imdb_rating || "N/A"})</li>`;
+            mediaItemData.imdbId || "N/A"
+          } (Рейтинг: ${mediaItemData.imdbRating || "N/A"})</li>`;
           // Внешние ID из деталей
-          if (details.externalIds?.imdb_id)
-            detailsHtml += `<li><strong>IMDb (детали):</strong> <a href="https://www.imdb.com/title/${details.externalIds.imdb_id}/" target="_blank">${details.externalIds.imdb_id}</a></li>`;
-          if (details.externalIds?.wikidata_id)
-            detailsHtml += `<li><strong>Wikidata ID:</strong> ${details.externalIds.wikidata_id}</li>`;
+          if (details.externalIds?.imdbId)
+            detailsHtml += `<li><strong>IMDb (детали):</strong> <a href="https://www.imdb.com/title/${details.externalIds.imdbId}/" target="_blank">${details.externalIds.imdbId}</a></li>`;
+          if (details.externalIds?.wikidataId)
+            detailsHtml += `<li><strong>Wikidata ID:</strong> ${details.externalIds.wikidataId}</li>`;
           // ... можно добавить facebook, twitter, instagram ...
           // Возрастной рейтинг РФ (если есть)
           const ruRating = details.contentRatings?.results?.find(
@@ -554,6 +645,15 @@
           detailsHtml += `<li><strong>Качество релиза (список):</strong> ${
             mediaItemData.releaseQuality || "N/A"
           }</li>`;
+          detailsHtml += `<li><strong>PG Rating (список):</strong> ${
+            mediaItemData.pgRating ?? "N/A"
+          }</li>`;
+          detailsHtml += `<li><strong>Kinopoisk (список):</strong> ID ${
+            mediaItemData.kinopoiskId || "N/A"
+          } (Рейтинг: ${mediaItemData.kpRating || "N/A"})</li>`;
+          detailsHtml += `<li><strong>IMDb (список):</strong> ID ${
+            mediaItemData.imdbId || "N/A"
+          } (Рейтинг: ${mediaItemData.imdbRating || "N/A"})</li>`;
           detailsHtml += `</ul>`;
 
           // --- Конец человекочитаемой части ---
@@ -633,8 +733,17 @@
         });
       }
 
+      // --- Обработчик для кнопки "Загрузить еще" ---
+      if (loadMoreBtn) {
+        loadMoreBtn.addEventListener("click", () => {
+          if (!isLoading && currentPage < totalPages) {
+            fetchAndDisplayMedia(currentPage + 1);
+          }
+        });
+      }
+
       // --- Запуск ---
-      fetchAndDisplayMedia();
+      fetchAndDisplayMedia(1); // Загружаем первую страницу при старте
     </script>
   </body>
 </html>

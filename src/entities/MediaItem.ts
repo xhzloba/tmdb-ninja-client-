@@ -12,6 +12,7 @@ import {
   CreditsResponse,
   CrewMember,
   CastMember,
+  ImagesResponse,
 } from "../types";
 import { ImageConfig } from "../config";
 
@@ -54,6 +55,7 @@ export abstract class MediaItem {
   readonly #alternativeTitles?: AlternativeTitlesResponse;
   readonly #contentRatings?: ContentRatingsResponse;
   readonly #credits?: CreditsResponse;
+  readonly #images?: ImagesResponse;
 
   // --- Методы для работы с командой (требуют append_to_response: ["credits"]) ---
 
@@ -111,11 +113,12 @@ export abstract class MediaItem {
     this.#voteCount = data.vote_count;
     this.#names = data.names;
     this.#pgRating = data.PG;
-    this.#releaseQuality = data.release_quality;
-    this.#kinopoiskId = data.kinopoisk_id;
-    this.#kpRating = data.kp_rating;
-    this.#imdbId = data.imdb_id;
-    this.#imdbRating = data.imdb_rating;
+    // Проверяем оба варианта написания (snake_case и camelCase) для полей прокси
+    this.#releaseQuality = data.release_quality ?? (data as any).releaseQuality;
+    this.#kinopoiskId = data.kinopoisk_id ?? (data as any).kinopoiskId;
+    this.#kpRating = data.kp_rating ?? (data as any).kpRating;
+    this.#imdbId = data.imdb_id ?? (data as any).imdbId;
+    this.#imdbRating = data.imdb_rating ?? (data as any).imdbRating;
     this.#status = data.status;
     this.#lastAirDate = data.last_air_date;
 
@@ -131,6 +134,7 @@ export abstract class MediaItem {
     this.#alternativeTitles = data.alternative_titles;
     this.#contentRatings = data.content_ratings;
     this.#credits = data.credits;
+    this.#images = data.images;
   }
 
   // --- Геттеры для доступа к приватным полям ---
@@ -231,6 +235,9 @@ export abstract class MediaItem {
   }
   get credits(): CreditsResponse | undefined {
     return this.#credits;
+  }
+  get images(): ImagesResponse | undefined {
+    return this.#images;
   }
 
   /**
