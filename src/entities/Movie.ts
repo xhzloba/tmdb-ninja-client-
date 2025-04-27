@@ -152,26 +152,6 @@ export class Movie extends MediaItem {
     return this.#images;
   }
 
-  // --- Методы для удобного доступа к данным из appendToResponse ---
-
-  /**
-   * Возвращает список режиссеров.
-   * Требует наличия 'credits' в appendToResponse.
-   */
-  getDirectors(): CrewMember[] {
-    return (
-      this.#credits?.crew?.filter((member) => member.job === "Director") ?? []
-    );
-  }
-
-  /**
-   * Возвращает список актеров (cast).
-   * Требует наличия 'credits' в appendToResponse.
-   */
-  getCast(): CastMember[] {
-    return this.#credits?.cast ?? [];
-  }
-
   // Комментарий для "себя": Переопределение метода или добавление
   // специфичной для фильма логики, если потребуется.
   // Например, getFormattedReleaseDate(): string { ... }

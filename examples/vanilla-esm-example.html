@@ -59,21 +59,65 @@
       hr {
         margin: 30px 0;
       }
+      /* Стили для двух колонок */
+      .main-content {
+        display: flex;
+        gap: 20px; /* Пространство между колонками */
+      }
+      #details-container {
+        flex: 1 1 40%; /* Детали занимают 40% ширины */
+        order: 1; /* Детали слева */
+        margin-top: 0; /* Убираем верхний отступ */
+        align-self: flex-start; /* Выравниваем по верху */
+      }
+      #tv-list-container {
+        /* Новый контейнер для списка */
+        flex: 1 1 60%; /* Список занимает 60% */
+        order: 2; /* Список справа */
+      }
+      #tv-list li {
+        /* Стили для элемента списка, если нужно */
+        word-wrap: break-word;
+      }
+      /* Стили для кнопки и скрытого блока */
+      .raw-data-container {
+        margin-top: 15px;
+        border-top: 1px dashed #ccc;
+        padding-top: 10px;
+      }
+      .raw-data-content {
+        display: none; /* Скрыто по умолчанию */
+      }
+      .raw-data-content.visible {
+        display: block;
+      }
+      button.toggle-raw-data {
+        margin-top: 10px;
+        padding: 5px 10px;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
-    <h1>Популярные Сериалы (Vanilla JS + ESM Пример)</h1>
+    <h1>Популярные Фильмы и Сериалы (Vanilla JS + ESM Пример)</h1>
 
-    <ul id="tv-list"></ul>
-    <div id="status-messages" class="status"></div>
-    <!-- Кнопка "Загрузить еще" здесь не реализована для простоты -->
+    <div class="main-content">
+      <div id="details-container" class="details">
+        <p>
+          <i
+            >Кликните на фильм или сериал в списке выше, чтобы увидеть
+            детали.</i
+          >
+        </p>
+      </div>
+      <div id="tv-list-container">
+        <ul id="media-list"></ul>
+        <div id="status-messages" class="status"></div>
+        <!-- Кнопка "Загрузить еще" здесь не реализована для простоты -->
+      </div>
+    </div>
 
     <hr />
-
-    <h2>Детали Сериала:</h2>
-    <div id="details-container" class="details">
-      <p><i>Кликните на сериал в списке выше, чтобы увидеть детали.</i></p>
-    </div>
 
     <!--
       Подключаем наш скрипт как МОДУЛЬ.
@@ -94,13 +138,19 @@
       const API_KEY = "4ef0d7355d9ffb5151e987764708ce96"; // ВАЖНО: Используйте свой ключ!
       // BASE_URL не нужен, используется значение по умолчанию из библиотеки
       // const BASE_URL = "https://tmdb.kurwa-bober.ninja/";
-      const client = createXhZlobaClient(API_KEY);
+
+      // Передаем undefined первым аргументом для baseURL (чтобы взять дефолтный),
+      // а API_KEY - вторым.
+      const client = createXhZlobaClient(undefined, API_KEY);
 
       // --- Получение элементов DOM ---
-      const tvListElement = document.getElementById("tv-list");
+      const mediaListElement = document.getElementById("media-list");
       const statusMessagesElement = document.getElementById("status-messages");
       const detailsContainerElement =
         document.getElementById("details-container");
+
+      // Массив для хранения загруженных объектов медиа
+      let mediaList = [];
 
       // --- Хелперы ---
       function showStatus(message, isError = false) {
@@ -116,32 +166,71 @@
         }"><i>${message}</i></p>`;
       }
 
-      // --- Загрузка и отображение списка СЕРИАЛОВ ---
-      async function fetchAndDisplayTvShows() {
-        showStatus("Загрузка списка сериалов...");
+      // --- Загрузка и отображение списка ФИЛЬМОВ и СЕРИАЛОВ ---
+      async function fetchAndDisplayMedia() {
+        showStatus("Загрузка списка медиа...");
         try {
-          // Используем getPopularTVShows из MediaService
-          // Замени client.media.getPopularMovies на метод для сериалов, если он есть,
-          // или используй getPopular и фильтруй. Пока используем getNowPlaying для смешанного списка.
-          // ПРИМЕЧАНИЕ: В библиотеке нет getPopularTVShows, используем getNowPlaying
-          const result = await client.media.getNowPlaying(1); // Загружаем 1 страницу now playing
+          // Используем новый метод getPopular
+          const result = await client.media.getPopular(1); // Загружаем 1 страницу популярных
 
-          if (tvListElement) {
-            tvListElement.innerHTML = ""; // Очищаем
+          if (mediaListElement) {
+            mediaListElement.innerHTML = ""; // Очищаем
+            mediaList = []; // Очищаем массив данных
+
             result.items.forEach((item) => {
-              // Проверяем, что это сериал перед добавлением в список
-              if (item instanceof TVShow) {
-                const li = document.createElement("li");
-                li.setAttribute("data-tv-id", String(item.id)); // Атрибут для клика
-                const posterUrl = item.getPosterUrl("w92") || "";
-                li.innerHTML = `
-                        <img src="${posterUrl}" alt="" onerror="this.style.display='none'">
-                        ${item.name} (${
-                  item.firstAirDate?.substring(0, 4) || "N/A"
-                })
+              mediaList.push(item); // Сохраняем объект
+              const li = document.createElement("li");
+              const posterUrl = item.getPosterUrl("w92") || "";
+              let itemHtml = "";
+
+              if (item instanceof Movie) {
+                li.setAttribute("data-media-id", String(item.id));
+                li.setAttribute("data-media-type", "movie");
+                itemHtml = `
+                        <div style="display: flex; align-items: center;">
+                            <img src="${posterUrl}" alt="" onerror="this.style.display='none'" style="flex-shrink: 0;">
+                            <div style="margin-left: 10px;">
+                                <strong>${item.title} (${
+                  item.releaseDate?.substring(0, 4) || "N/A"
+                }) [Фильм]</strong><br>
+                                <small>
+                                    Качество: ${
+                                      item.releaseQuality || "N/A"
+                                    }<br>
+                                    KP ID: ${
+                                      item.kinopoisk_id || "N/A"
+                                    } (Рейтинг: ${item.kp_rating || "N/A"})
+                                </small>
+                            </div>
+                        </div>
                     `;
-                tvListElement.appendChild(li);
+              } else if (item instanceof TVShow) {
+                li.setAttribute("data-media-id", String(item.id));
+                li.setAttribute("data-media-type", "tv");
+                itemHtml = `
+                        <div style="display: flex; align-items: center;">
+                            <img src="${posterUrl}" alt="" onerror="this.style.display='none'" style="flex-shrink: 0;">
+                            <div style="margin-left: 10px;">
+                                <strong>${item.name} (${
+                  item.firstAirDate?.substring(0, 4) || "N/A"
+                }) [Сериал]</strong><br>
+                                <small>
+                                    Качество: ${
+                                      item.releaseQuality || "N/A"
+                                    }<br>
+                                    KP ID: ${
+                                      item.kinopoisk_id || "N/A"
+                                    } (Рейтинг: ${item.kp_rating || "N/A"})
+                                </small>
+                            </div>
+                        </div>
+                    `;
+              } else {
+                // Пропускаем неизвестный тип, если вдруг придет
+                return;
               }
+              li.innerHTML = itemHtml;
+              mediaListElement.appendChild(li);
             });
           }
           showStatus(""); // Очищаем статус
@@ -157,14 +246,20 @@
         }
       }
 
-      // --- Загрузка и отображение ДЕТАЛЕЙ СЕРИАЛА ---
+      // --- Загрузка и отображение ДЕТАЛЕЙ МЕДИА ---
       let isDetailsLoading = false;
-      async function displayTvShowDetails(tvId) {
+      async function displayMediaDetails(mediaItemData) {
+        const mediaId = mediaItemData.id;
+        const mediaType = mediaItemData instanceof Movie ? "movie" : "tv";
+
         if (isDetailsLoading || !detailsContainerElement) return;
         isDetailsLoading = true;
-        showDetailsStatus("Загрузка деталей сериала...");
+        showDetailsStatus(
+          `Загрузка деталей ${mediaType === "movie" ? "фильма" : "сериала"}...`
+        );
 
         try {
+          let details;
           const allAppendToResponse = [
             "keywords",
             "alternative_titles",
@@ -177,24 +272,324 @@
             "similar",
             "reviews",
             "images",
-            // Специфичные для TV можно добавить, если API поддерживает
+            // Специфичные для Movie (release_dates)
+            // Специфичные для TV (
             // "aggregate_credits", "episode_groups"
+            // )
           ];
-          const tvDetails = await client.media.getTVShowDetails(tvId, {
-            language: "ru",
-            appendToResponse: allAppendToResponse,
-          });
 
-          console.log("Детали сериала получены:", tvDetails);
+          if (mediaType === "movie" && mediaItemData instanceof Movie) {
+            details = await client.media.getMovieDetails(mediaId, {
+              language: "ru",
+              appendToResponse: [...allAppendToResponse, "release_dates"], // Добавляем специфичное для movie
+            });
+          } else if (mediaType === "tv" && mediaItemData instanceof TVShow) {
+            details = await client.media.getTVShowDetails(mediaId, {
+              language: "ru",
+              appendToResponse: allAppendToResponse, // Специфичные для TV пока не добавляем
+            });
+          } else {
+            throw new Error("Unknown media type in list data");
+          }
 
-          // Отображаем детали как JSON
-          detailsContainerElement.innerHTML = `                  <h3>${
-            tvDetails.name
-          }</h3>
-                  <pre>${JSON.stringify(tvDetails, null, 2)}</pre>
-              `;
+          console.log(`Детали ${mediaType}:`, details);
+
+          // --- Формируем ПОДРОБНЫЙ человекочитаемый HTML ---
+          let detailsHtml = `<h3>${
+            mediaType === "movie" ? details.title : details.name
+          }</h3>`;
+          detailsHtml += `<p><i>${
+            mediaType === "movie" ? details.tagline || "" : ""
+          }</i></p>`; // Слоган для фильма
+
+          detailsHtml += `<p><strong>Обзор:</strong> ${
+            details.overview || "N/A"
+          }</p>`;
+          detailsHtml += "<hr style='border-style: dashed;'>";
+
+          // --- Изображения ---
+          detailsHtml += `<h4>Изображения:</h4>`;
+          const posterUrl = details.getPosterUrl("w185");
+          const backdropUrl = details.getBackdropUrl("w300");
+          detailsHtml += `<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">`;
+          if (posterUrl) {
+            detailsHtml += `<span><img src="${posterUrl}" alt="Постер" style="height: 120px; width: auto; border: 1px solid #ccc;"><br><small>Основной постер</small></span>`;
+          }
+          if (backdropUrl) {
+            detailsHtml += `<span><img src="${backdropUrl}" alt="Фон" style="height: 120px; width: auto; border: 1px solid #ccc;"><br><small>Основной фон</small></span>`;
+          }
+          // Логотип (если есть)
+          const logo = details.images?.logos?.[0];
+          if (logo?.file_path) {
+            const logoUrl = details.getLogoUrl(logo.file_path, "w154");
+            if (logoUrl) {
+              detailsHtml += `<span><img src="${logoUrl}" alt="Логотип" style="height: 50px; width: auto; background: #ddd; padding: 5px; border: 1px solid #ccc;"><br><small>Логотип</small></span>`;
+            }
+          }
+          detailsHtml += `</div>`;
+          // Дополнительные постеры и фоны
+          if (details.images?.posters?.length > 1) {
+            detailsHtml += `<p><small>Доп. постеры: ${details.images.posters
+              .slice(1, 4)
+              .map(
+                (p, i) =>
+                  `<img src="${details.getPosterUrl(
+                    p.file_path,
+                    "w92"
+                  )}" style="height: 60px; width: auto; margin-left: 5px; border: 1px solid #ccc;" title="Постер ${
+                    i + 1
+                  } (${p.iso_639_1 || "any"})">`
+              )
+              .join("")} ${
+              details.images.posters.length > 4 ? "..." : ""
+            }</small></p>`;
+          }
+          if (details.images?.backdrops?.length > 1) {
+            detailsHtml += `<p><small>Доп. фоны: ${details.images.backdrops
+              .slice(1, 4)
+              .map(
+                (b, i) =>
+                  `<img src="${details.getBackdropUrl(
+                    b.file_path,
+                    "w300"
+                  )}" style="height: 40px; width: auto; margin-left: 5px; border: 1px solid #ccc;" title="Фон ${
+                    i + 1
+                  }">`
+              )
+              .join("")} ${
+              details.images.backdrops.length > 4 ? "..." : ""
+            }</small></p>`;
+          }
+
+          // --- Основная информация ---
+          detailsHtml += `<h4>Основная информация:</h4><ul style="font-size: 0.9em; padding-left: 15px; list-style: disc;">`;
+          detailsHtml += `<li><strong>Статус:</strong> ${
+            details.status || "N/A"
+          }</li>`;
+          detailsHtml += `<li><strong>Жанры:</strong> ${
+            details.genres?.map((g) => g.name).join(", ") || "N/A"
+          }</li>`;
+          detailsHtml += `<li><strong>Ориг. язык:</strong> ${
+            details.originalLanguage || "N/A"
+          }</li>`;
+          detailsHtml += `<li><strong>Разговорные языки:</strong> ${
+            details.spokenLanguages?.map((l) => l.english_name).join(", ") ||
+            "N/A"
+          }</li>`;
+          detailsHtml += `<li><strong>Страны произв.:</strong> ${
+            details.productionCountries?.map((c) => c.name).join(", ") || "N/A"
+          }</li>`;
+          detailsHtml += `<li><strong>Компании произв.:</strong> ${
+            details.productionCompanies?.map((c) => c.name).join(", ") || "N/A"
+          }</li>`;
+
+          // --- Типо-специфичная основная информация ---
+          if (mediaType === "movie" && details instanceof Movie) {
+            detailsHtml += `<li><strong>Дата релиза:</strong> ${
+              details.releaseDate || "N/A"
+            }</li>`;
+            detailsHtml += `<li><strong>Продолжительность:</strong> ${
+              details.runtime ? details.runtime + " мин." : "N/A"
+            }</li>`;
+            detailsHtml += `<li><strong>Бюджет:</strong> ${
+              details.budget ? "$" + details.budget.toLocaleString() : "N/A"
+            }</li>`;
+            detailsHtml += `<li><strong>Сборы:</strong> ${
+              details.revenue ? "$" + details.revenue.toLocaleString() : "N/A"
+            }</li>`;
+            detailsHtml += `<li><strong>Для взрослых:</strong> ${
+              details.adult ? "Да" : "Нет"
+            }</li>`;
+            if (details.belongsToCollection)
+              detailsHtml += `<li><strong>Коллекция:</strong> ${
+                details.belongsToCollection.name || "Да"
+              }</li>`;
+          } else if (mediaType === "tv" && details instanceof TVShow) {
+            detailsHtml += `<li><strong>Первый эфир:</strong> ${
+              details.firstAirDate || "N/A"
+            }</li>`;
+            detailsHtml += `<li><strong>Последний эфир:</strong> ${
+              details.lastEpisodeToAir?.air_date || "N/A"
+            } (${details.inProduction ? "В производстве" : "Завершен"})</li>`;
+            detailsHtml += `<li><strong>Страна происхождения:</strong> ${
+              details.originCountry?.join(", ") || "N/A"
+            }</li>`;
+            detailsHtml += `<li><strong>Сезонов:</strong> ${
+              details.numberOfSeasons || "N/A"
+            }</li>`;
+            detailsHtml += `<li><strong>Эпизодов:</strong> ${
+              details.numberOfEpisodes || "N/A"
+            }</li>`;
+            detailsHtml += `<li><strong>Тип:</strong> ${
+              details.type || "N/A"
+            }</li>`;
+            detailsHtml += `<li><strong>Сети:</strong> ${
+              details.networks?.map((n) => n.name).join(", ") || "N/A"
+            }</li>`;
+            detailsHtml += `<li><strong>Создатели:</strong> ${
+              details.createdBy?.map((c) => c.name).join(", ") || "N/A"
+            }</li>`;
+            detailsHtml += `<li><strong>Длительность эпизода:</strong> ${
+              details.episodeRunTime?.join("-") || "N/A"
+            } мин.</li>`;
+            detailsHtml += `<li><strong>Языки сериала:</strong> ${
+              details.languages?.join(", ") || "N/A"
+            }</li>`;
+          }
+          detailsHtml += `</ul>`;
+
+          // --- Рейтинги и ID ---
+          detailsHtml += `<h4>Рейтинги и ID:</h4><ul style="font-size: 0.9em; padding-left: 15px; list-style: disc;">`;
+          detailsHtml += `<li><strong>TMDB Рейтинг:</strong> ${details.voteAverage?.toFixed(
+            1
+          )}/10 (${details.voteCount} голосов)</li>`;
+          // Поля из прокси (берем из объекта списка)
+          detailsHtml += `<li><strong>Kinopoisk (из списка):</strong> ID ${
+            mediaItemData.kinopoisk_id || "N/A"
+          } (Рейтинг: ${mediaItemData.kp_rating || "N/A"})</li>`;
+          detailsHtml += `<li><strong>IMDb (из списка):</strong> ID ${
+            mediaItemData.imdb_id || "N/A"
+          } (Рейтинг: ${mediaItemData.imdb_rating || "N/A"})</li>`;
+          // Внешние ID из деталей
+          if (details.externalIds?.imdb_id)
+            detailsHtml += `<li><strong>IMDb (детали):</strong> <a href="https://www.imdb.com/title/${details.externalIds.imdb_id}/" target="_blank">${details.externalIds.imdb_id}</a></li>`;
+          if (details.externalIds?.wikidata_id)
+            detailsHtml += `<li><strong>Wikidata ID:</strong> ${details.externalIds.wikidata_id}</li>`;
+          // ... можно добавить facebook, twitter, instagram ...
+          // Возрастной рейтинг РФ (если есть)
+          const ruRating = details.contentRatings?.results?.find(
+            (r) => r.iso_3166_1 === "RU"
+          )?.rating;
+          if (ruRating)
+            detailsHtml += `<li><strong>Возраст (РФ):</strong> ${ruRating}</li>`;
+          detailsHtml += `</ul>`;
+
+          // --- Команда (Credits) ---
+          if (details.credits) {
+            detailsHtml += `<h4>Команда:</h4><ul style="font-size: 0.9em; padding-left: 15px; list-style: disc;">`;
+            const directors = details.getDirectors();
+            if (directors.length > 0)
+              detailsHtml += `<li><strong>Режиссеры:</strong> ${directors
+                .map((d) => d.name)
+                .join(", ")}</li>`;
+            const cast = details.getCast();
+            if (cast.length > 0)
+              detailsHtml += `<li><strong>В ролях:</strong> ${cast
+                .slice(0, 10)
+                .map((a) => a.name)
+                .join(", ")} ${cast.length > 10 ? "..." : ""}</li>`;
+            const writers = details.getCrewByDepartment("Writing");
+            if (writers.length > 0)
+              detailsHtml += `<li><strong>Сценаристы:</strong> ${writers
+                .slice(0, 5)
+                .map((w) => w.name)
+                .join(", ")} ${writers.length > 5 ? "..." : ""}</li>`;
+            // ... можно добавить другие департаменты ...
+            detailsHtml += `</ul>`;
+          }
+
+          // --- Видео (Трейлер) ---
+          const trailer = details.videos?.results?.find(
+            (v) => v.type === "Trailer" && v.site === "YouTube"
+          );
+          if (trailer) {
+            detailsHtml += `<h4>Трейлер:</h4>`;
+            detailsHtml += `<p><a href="https://www.youtube.com/watch?v=${trailer.key}" target="_blank">${trailer.name} (YouTube)</a></p>`;
+          }
+
+          // --- Ключевые слова ---
+          if (details.keywords?.keywords?.length > 0) {
+            detailsHtml += `<h4>Ключевые слова:</h4>`;
+            detailsHtml += `<p><small>${details.keywords.keywords
+              .slice(0, 20)
+              .map((k) => k.name)
+              .join(", ")} ${
+              details.keywords.keywords.length > 20 ? "..." : ""
+            }</small></p>`;
+          }
+
+          // --- Рекомендации и Похожие ---
+          if (details.recommendations?.results?.length > 0) {
+            detailsHtml += `<h4>Рекомендации (${details.recommendations.total_results}):</h4>`;
+            detailsHtml += `<p><small>${details.recommendations.results
+              .slice(0, 8)
+              .map((m) => m.title || m.name)
+              .join(", ")} ${
+              details.recommendations.results.length > 8 ? "..." : ""
+            }</small></p>`;
+          }
+          if (details.similar?.results?.length > 0) {
+            detailsHtml += `<h4>Похожие (${details.similar.total_results}):</h4>`;
+            detailsHtml += `<p><small>${details.similar.results
+              .slice(0, 8)
+              .map((m) => m.title || m.name)
+              .join(", ")} ${
+              details.similar.results.length > 8 ? "..." : ""
+            }</small></p>`;
+          }
+
+          // --- Где посмотреть (Watch Providers RU) ---
+          const ruProviders = details.watchProviders?.results?.RU;
+          if (ruProviders) {
+            detailsHtml += `<h4>Где посмотреть (RU):</h4>`;
+            if (ruProviders.link)
+              detailsHtml += `<p><a href="${ruProviders.link}" target="_blank">Ссылка на JustWatch</a></p>`;
+            const providersToList = (provs) =>
+              provs ? provs.map((p) => p.provider_name).join(", ") : "N/A";
+            detailsHtml += `<ul style="font-size: 0.9em; padding-left: 15px; list-style: disc;">`;
+            detailsHtml += `<li><strong>Подписка:</strong> ${providersToList(
+              ruProviders.flatrate
+            )}</li>`;
+            detailsHtml += `<li><strong>Покупка:</strong> ${providersToList(
+              ruProviders.buy
+            )}</li>`;
+            detailsHtml += `<li><strong>Аренда:</strong> ${providersToList(
+              ruProviders.rent
+            )}</li>`;
+            detailsHtml += `</ul>`;
+          }
+
+          // --- Качество из списка (продублируем для ясности) ---
+          detailsHtml += `<h4>Доп. Инфо (из списка):</h4><ul style="font-size: 0.9em; padding-left: 15px; list-style: disc;">`;
+          detailsHtml += `<li><strong>Качество релиза (список):</strong> ${
+            mediaItemData.releaseQuality || "N/A"
+          }</li>`;
+          detailsHtml += `</ul>`;
+
+          // --- Конец человекочитаемой части ---
+          detailsHtml += "<hr style='border-style: dashed;'>";
+
+          // Кнопка и контейнер для Raw Data
+          detailsHtml += `
+                <div class="raw-data-container">
+                    <button class="toggle-raw-data" data-target="raw-data-${mediaId}">Показать Raw Data</button>
+                    <div id="raw-data-${mediaId}" class="raw-data-content">
+                        <h4>Все поля объекта (raw data):</h4>
+                        <pre>${JSON.stringify(details, null, 2)}</pre>
+                    </div>
+                </div>
+            `;
+
+          detailsContainerElement.innerHTML = detailsHtml;
+
+          // Обработчик для кнопки
+          const toggleButton = detailsContainerElement.querySelector(
+            `.toggle-raw-data[data-target='raw-data-${mediaId}']`
+          );
+          if (toggleButton) {
+            toggleButton.addEventListener("click", () => {
+              const targetId = toggleButton.getAttribute("data-target");
+              const content = document.getElementById(targetId);
+              if (content) {
+                const isVisible = content.classList.toggle("visible");
+                toggleButton.textContent = isVisible
+                  ? "Скрыть Raw Data"
+                  : "Показать Raw Data";
+              }
+            });
+          }
         } catch (error) {
-          console.error("Ошибка загрузки деталей сериала:", error);
+          console.error("Ошибка загрузки деталей медиа:", error);
           let msg = "Неизвестная ошибка деталей";
           if (error instanceof ApiError) {
             msg = `API Ошибка деталей: ${error.message}`;
@@ -208,20 +603,38 @@
       }
 
       // --- Обработчик клика на список ---
-      if (tvListElement) {
-        tvListElement.addEventListener("click", (event) => {
-          const clickedLi = event.target.closest("li[data-tv-id]");
+      if (mediaListElement) {
+        mediaListElement.addEventListener("click", (event) => {
+          const clickedLi = event.target.closest("li[data-media-id]");
           if (clickedLi) {
-            const tvId = clickedLi.getAttribute("data-tv-id");
-            if (tvId) {
-              displayTvShowDetails(parseInt(tvId, 10));
+            const mediaIdStr = clickedLi.getAttribute("data-media-id");
+            if (mediaIdStr) {
+              const mediaId = parseInt(mediaIdStr, 10);
+              // Находим объект в нашем общем массиве
+              const mediaItemData = mediaList.find(
+                (item) => item.id === mediaId
+              );
+              if (
+                mediaItemData instanceof Movie ||
+                mediaItemData instanceof TVShow
+              ) {
+                displayMediaDetails(mediaItemData); // Передаем найденный объект
+              } else {
+                console.warn(
+                  "Clicked item not found or invalid type in mediaList"
+                );
+                showDetailsStatus(
+                  "Не удалось найти данные для этого элемента.",
+                  true
+                );
+              }
             }
           }
         });
       }
 
       // --- Запуск ---
-      fetchAndDisplayTvShows();
+      fetchAndDisplayMedia();
     </script>
   </body>
 </html>

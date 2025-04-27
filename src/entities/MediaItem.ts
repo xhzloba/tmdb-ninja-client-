@@ -8,6 +8,10 @@ import {
   ReleaseDatesResponse,
   KeywordsResponse,
   AlternativeTitlesResponse,
+  ContentRatingsResponse,
+  CreditsResponse,
+  CrewMember,
+  CastMember,
 } from "../types";
 import { ImageConfig } from "../config";
 
@@ -48,6 +52,45 @@ export abstract class MediaItem {
   readonly #releaseDates?: ReleaseDatesResponse;
   readonly #keywords?: KeywordsResponse;
   readonly #alternativeTitles?: AlternativeTitlesResponse;
+  readonly #contentRatings?: ContentRatingsResponse;
+  readonly #credits?: CreditsResponse;
+
+  // --- Методы для работы с командой (требуют append_to_response: ["credits"]) ---
+
+  /**
+   * Возвращает массив режиссеров.
+   * Требует, чтобы данные были загружены с `appendToResponse: ["credits"]`.
+   * @returns Массив объектов CrewMember или пустой массив.
+   */
+  getDirectors(): CrewMember[] {
+    return (
+      this.credits?.crew?.filter((member) => member.job === "Director") ?? []
+    );
+  }
+
+  /**
+   * Возвращает массив основного актерского состава.
+   * Требует, чтобы данные были загружены с `appendToResponse: ["credits"]`.
+   * @returns Массив объектов CastMember или пустой массив.
+   */
+  getCast(): CastMember[] {
+    // Можно добавить сортировку по order, если нужно
+    return this.credits?.cast ? [...this.credits.cast] : [];
+  }
+
+  /**
+   * Возвращает членов съемочной группы по указанному департаменту.
+   * Требует, чтобы данные были загружены с `appendToResponse: ["credits"]`.
+   * @param department - Название департамента (например, 'Writing', 'Production', 'Sound').
+   * @returns Массив объектов CrewMember или пустой массив.
+   */
+  getCrewByDepartment(department: string): CrewMember[] {
+    return (
+      this.credits?.crew?.filter(
+        (member) => member.department === department
+      ) ?? []
+    );
+  }
 
   /**
    * Защищенный конструктор, вызывается из дочерних классов.
@@ -86,6 +129,8 @@ export abstract class MediaItem {
     this.#releaseDates = data.release_dates;
     this.#keywords = data.keywords;
     this.#alternativeTitles = data.alternative_titles;
+    this.#contentRatings = data.content_ratings;
+    this.#credits = data.credits;
   }
 
   // --- Геттеры для доступа к приватным полям ---
@@ -180,6 +225,12 @@ export abstract class MediaItem {
   }
   get alternativeTitles(): AlternativeTitlesResponse | undefined {
     return this.#alternativeTitles;
+  }
+  get contentRatings(): ContentRatingsResponse | undefined {
+    return this.#contentRatings;
+  }
+  get credits(): CreditsResponse | undefined {
+    return this.#credits;
   }
 
   /**
