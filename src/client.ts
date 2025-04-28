@@ -58,29 +58,68 @@ export function createTMDBProxyClient(
 
     // Дополнительная полезная информация внутри группы
     console.log(
-      `%cBase URL:%c ${baseURL}`,
-      "font-weight: bold; color: #fb8500;", // Стиль для метки
-      "" // Обычный стиль для значения
-    );
-    console.log(
       `%cServices:%c client.media, client.person`,
       "font-weight: bold; color: #fb8500;",
       ""
     );
-    // Убрали Quick Start log
-    console.log(
-      `%cDocs:%c ${homepage}`,
-      "font-weight: bold; color: #219ebc;", // Стиль для метки
-      "text-decoration: underline; color: #219ebc;" // Стиль для кликабельной ссылки
-    );
+    // Ссылка на документацию (GitHub)
+    const docsNameStyle =
+      "background: #2da44e; color: #ffffff; padding: 3px; border-radius: 3px 0 0 3px; font-weight: bold;"; // Зеленый GitHub
+    const docsLinkStyle =
+      "background: #e6ffed; color: #2da44e; padding: 3px; border-radius: 0 3px 3px 0; font-weight: bold; text-decoration: underline;"; // Светлый зеленый GitHub
+    console.log(`%c Docs %c ${homepage}`, docsNameStyle, docsLinkStyle);
 
-    console.groupEnd(); // Закрываем группу
+    console.groupEnd(); // Закрываем основную группу
+
+    // Выносим ссылку на NPM из группы
+    const npmLink = `https://www.npmjs.com/package/${libName}`;
+    const npmNameStyle =
+      "background: #CB3837; color: #ffffff; padding: 3px; border-radius: 3px 0 0 3px; font-weight: bold;"; // Красный NPM фон
+    const npmLinkStyle =
+      "background: #FCCECB; color: #CB3837; padding: 3px; border-radius: 0 3px 3px 0; font-weight: bold; text-decoration: underline;"; // Светло-красный NPM фон
+    console.log(`%c NPM %c ${npmLink}`, npmNameStyle, npmLinkStyle);
   } catch (e) {
     /* Игнорируем */
   }
 
   const personService = new PersonService(apiClient);
   const mediaService = new MediaService(apiClient);
+
+  // --- Вывод методов сервисов (в правильном месте) ---
+  try {
+    const getMethods = (service: any): string[] => {
+      return Object.getOwnPropertyNames(Object.getPrototypeOf(service)).filter(
+        (prop) =>
+          typeof service[prop] === "function" &&
+          prop !== "constructor" &&
+          !prop.startsWith("_") &&
+          !prop.startsWith("#")
+      );
+    };
+
+    const mediaMethods = getMethods(mediaService);
+    if (mediaMethods.length > 0) {
+      console.groupCollapsed(
+        "%c Media Service Methods",
+        "color: #0366d6; font-weight: bold;"
+      );
+      console.log(mediaMethods.join(", "));
+      console.groupEnd();
+    }
+
+    const personMethods = getMethods(personService);
+    if (personMethods.length > 0) {
+      console.groupCollapsed(
+        "%c Person Service Methods",
+        "color: #d73a49; font-weight: bold;"
+      );
+      console.log(personMethods.join(", "));
+      console.groupEnd();
+    }
+  } catch (introspectionError) {
+    console.warn("Could not list service methods.", introspectionError);
+  }
+  // -----------------------------------------------
 
   return {
     /**
