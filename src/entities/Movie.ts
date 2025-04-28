@@ -185,6 +185,31 @@ export class Movie extends MediaItem {
     }
   }
 
+  /**
+   * Возвращает длительность фильма в читаемом формате "X ч Y мин".
+   * Требует, чтобы у объекта Movie было установлено свойство `runtime` (обычно из getMovieDetails).
+   * @returns Отформатированная строка длительности (например, "2 ч 56 мин") или null, если runtime не определен или равен 0.
+   */
+  getFormattedRuntime(): string | null {
+    const runtimeMinutes = this.runtime;
+    if (!runtimeMinutes || runtimeMinutes <= 0) {
+      return null;
+    }
+
+    const hours = Math.floor(runtimeMinutes / 60);
+    const minutes = runtimeMinutes % 60;
+
+    let result = "";
+    if (hours > 0) {
+      result += `${hours} ч `;
+    }
+    if (minutes > 0) {
+      result += `${minutes} мин`;
+    }
+
+    return result.trim() || null; // Возвращаем null, если результат пустой (маловероятно, но на всякий случай)
+  }
+
   get tagline(): string | null | undefined {
     // Переопределяем, если есть только у Movie (если tagline убрали из MediaItem)
     // Если tagline в MediaItem, эта перегрузка не нужна

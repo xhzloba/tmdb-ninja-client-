@@ -241,6 +241,13 @@ client.media
     const dateRu = movie.getFormattedReleaseDate("ru-RU"); // => "1 марта 2022 г."
     const dateEn = movie.getFormattedReleaseDate("en-US"); // => "Mar 1, 2022"
     ```
+- `getFormattedRuntime()`: Возвращает длительность (из `runtime`) в формате "X ч Y мин". Возвращает `null`, если `runtime` не определен или <= 0. (Требует `getDetails`).
+  - ```typescript
+    // Если movie.runtime = 176
+    const formattedRuntime = movie.getFormattedRuntime(); // => "2 ч 56 мин"
+    // Если movie.runtime = 55
+    const shortRuntime = someOtherMovie.getFormattedRuntime(); // => "55 мин"
+    ```
 
 **Поля и Методы `TVShow`:**
 
