@@ -352,6 +352,27 @@ export interface DetailedMediaBase {
 }
 
 /**
+ * Интерфейс для описания НЕОБЯЗАТЕЛЬНЫХ полей в camelCase,
+ * которые может добавлять прокси-сервер.
+ */
+export interface ProxySpecificFields {
+  releaseQuality?: string;
+  kinopoiskId?: string;
+  kpRating?: string;
+  imdbId?: string;
+  imdbRating?: string;
+  // При необходимости добавь сюда другие специфичные для прокси поля
+}
+
+/**
+ * Объединенный тип данных, представляющий ВСЕ возможные поля,
+ * которые могут прийти от API (стандартные + детальные + прокси).
+ */
+export type MediaDataFromApi = BaseMedia &
+  Partial<DetailedMediaBase> &
+  Partial<ProxySpecificFields>;
+
+/**
  * Представление фильма из API (включая возможные детальные поля).
  */
 export interface MovieMedia extends BaseMedia, Partial<DetailedMediaBase> {

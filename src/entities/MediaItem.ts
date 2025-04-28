@@ -13,6 +13,7 @@ import {
   CrewMember,
   CastMember,
   ImagesResponse,
+  MediaDataFromApi,
 } from "../types";
 import { ImageConfig } from "../config";
 
@@ -98,7 +99,7 @@ export abstract class MediaItem {
    * Защищенный конструктор, вызывается из дочерних классов.
    * @param data - Данные из API (могут быть BaseMedia или расширенные MovieMedia/TVShowMedia).
    */
-  protected constructor(data: BaseMedia & Partial<DetailedMediaBase>) {
+  protected constructor(data: MediaDataFromApi) {
     // Комментарий для "себя": Прямое присваивание данных из API.
     // Можно добавить валидацию или трансформацию при необходимости.
     this.#id = data.id;
@@ -114,11 +115,11 @@ export abstract class MediaItem {
     this.#names = data.names;
     this.#pgRating = data.PG;
     // Проверяем оба варианта написания (snake_case и camelCase) для полей прокси
-    this.#releaseQuality = data.release_quality ?? (data as any).releaseQuality;
-    this.#kinopoiskId = data.kinopoisk_id ?? (data as any).kinopoiskId;
-    this.#kpRating = data.kp_rating ?? (data as any).kpRating;
-    this.#imdbId = data.imdb_id ?? (data as any).imdbId;
-    this.#imdbRating = data.imdb_rating ?? (data as any).imdbRating;
+    this.#releaseQuality = data.release_quality ?? data.releaseQuality;
+    this.#kinopoiskId = data.kinopoisk_id ?? data.kinopoiskId;
+    this.#kpRating = data.kp_rating ?? data.kpRating;
+    this.#imdbId = data.imdb_id ?? data.imdbId;
+    this.#imdbRating = data.imdb_rating ?? data.imdbRating;
     this.#status = data.status;
     this.#lastAirDate = data.last_air_date;
 
