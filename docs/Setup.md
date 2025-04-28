@@ -16,7 +16,7 @@ yarn add tmdb-xhzloba
 
 **Основной способ (с прокси по умолчанию):**
 
-Импортируйте `createTMDBProxyClient` и передайте ваш API ключ. Будет использован прокси-URL по умолчанию (`https://tmdb.kurwa-bober.ninja/`).
+Импортируйте `createTMDBProxyClient` и передайте ваш API ключ. Будет использован прокси-URL по умолчанию.
 
 ```typescript
 import { createTMDBProxyClient } from "tmdb-xhzloba";
