@@ -261,3 +261,296 @@ const PersonProfile: React.FC<PersonProfileProps> = ({ personId }) => {
 
 export default PersonProfile;
 ```
+
+## Пример 3: Получение Новинок (Latest)
+
+Этот компонент загружает и отображает списки последних добавленных фильмов и сериалов.
+
+```jsx
+import React, { useState, useEffect } from 'react';
+import { createTMDBProxyClient, Movie, TVShow, ApiError } from 'tmdb-xhzloba';
+
+const client = createTMDBProxyClient("ВАШ_API_КЛЮЧ");
+
+function LatestMedia() {
+  const [latestMovies, setLatestMovies] = useState<Movie[]>([]);
+  const [latestTvShows, setLatestTvShows] = useState<TVShow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchLatest = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Запрашиваем параллельно
+        const [moviesData, tvShowsData] = await Promise.all([
+          client.media.getLatestMovies(1), // Первая страница последних фильмов
+          client.media.getLatestTvShows(1), // Первая страница последних сериалов
+        ]);
+        setLatestMovies(moviesData.items);
+        setLatestTvShows(tvShowsData.items);
+      } catch (err) {
+        console.error("Ошибка загрузки новинок:", err);
+        if (err instanceof ApiError) {
+          setError(`Ошибка API (${err.statusCode}): ${err.apiMessage || err.message}`);
+        } else {
+          setError("Произошла неизвестная ошибка");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLatest();
+  }, []);
+
+  if (loading) return <p>Загрузка новинок...</p>;
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
+
+  return (
+    <div>
+      <h2>Последние добавленные фильмы</h2>
+      {latestMovies.length > 0 ? (
+        <ul>
+          {latestMovies.map((movie) => (
+            <li key={`movie-${movie.id}`}>{movie.title}</li>
+          ))}
+        </ul>
+      ) : <p>Нет данных.</p>}
+
+      <h2>Последние добавленные сериалы</h2>
+      {latestTvShows.length > 0 ? (
+        <ul>
+          {latestTvShows.map((tvShow) => (
+            <li key={`tv-${tvShow.id}`}>{tvShow.name}</li>
+          ))}
+        </ul>
+      ) : <p>Нет данных.</p>}
+    </div>
+  );
+}
+
+export default LatestMedia;
+```
+
+## Пример 4: Получение Актуальных Медиа (Now Playing)
+
+Этот компонент загружает и отображает списки фильмов и сериалов, которые актуальны сейчас (в прокате/эфире).
+
+```jsx
+import React, { useState, useEffect } from 'react';
+import { createTMDBProxyClient, Movie, TVShow, ApiError } from 'tmdb-xhzloba';
+
+const client = createTMDBProxyClient("ВАШ_API_КЛЮЧ");
+
+function NowPlayingMedia() {
+  const [nowPlayingMovies, setNowPlayingMovies] = useState<Movie[]>([]);
+  const [nowPlayingTvShows, setNowPlayingTvShows] = useState<TVShow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchNowPlaying = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [moviesData, tvShowsData] = await Promise.all([
+          client.media.getNowPlayingMovies(1),
+          client.media.getNowPlayingTvShows(1),
+        ]);
+        setNowPlayingMovies(moviesData.items);
+        setNowPlayingTvShows(tvShowsData.items);
+      } catch (err) {
+        console.error("Ошибка загрузки актуального:", err);
+        if (err instanceof ApiError) {
+          setError(`Ошибка API (${err.statusCode}): ${err.apiMessage || err.message}`);
+        } else {
+          setError("Произошла неизвестная ошибка");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNowPlaying();
+  }, []);
+
+  if (loading) return <p>Загрузка актуального...</p>;
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
+
+  return (
+    <div>
+      <h2>Фильмы в прокате</h2>
+      {/* ... Отображение списка nowPlayingMovies ... */}
+      <h2>Сериалы в эфире</h2>
+      {/* ... Отображение списка nowPlayingTvShows ... */}
+    </div>
+  );
+}
+
+export default NowPlayingMedia;
+```
+
+## Пример 5: Поиск Медиа
+
+Этот компонент позволяет пользователю вводить поисковый запрос и отображает найденные фильмы и сериалы.
+
+```jsx
+import React, { useState, useEffect, useCallback } from 'react';
+import { createTMDBProxyClient, Movie, TVShow, ApiError } from 'tmdb-xhzloba';
+
+const client = createTMDBProxyClient("ВАШ_API_КЛЮЧ");
+
+function MediaSearch() {
+  const [query, setQuery] = useState<string>("");
+  const [foundMovies, setFoundMovies] = useState<Movie[]>([]);
+  const [foundTvShows, setFoundTvShows] = useState<TVShow[]>([]);
+  const [loading, setLoading] = useState(false); // Не загружаем сразу
+  const [error, setError] = useState<string | null>(null);
+
+  // Функция для выполнения поиска
+  const performSearch = useCallback(async (searchQuery: string) => {
+    if (!searchQuery.trim()) {
+      setFoundMovies([]);
+      setFoundTvShows([]);
+      setError(null);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const [moviesData, tvShowsData] = await Promise.all([
+        client.media.searchMovies(searchQuery),
+        client.media.searchTVShows(searchQuery),
+      ]);
+      setFoundMovies(moviesData.items);
+      setFoundTvShows(tvShowsData.items);
+    } catch (err) {
+      console.error("Ошибка поиска:", err);
+      setFoundMovies([]);
+      setFoundTvShows([]);
+      if (err instanceof ApiError) {
+        setError(`Ошибка API (${err.statusCode}): ${err.apiMessage || err.message}`);
+      } else {
+        setError("Произошла неизвестная ошибка при поиске");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Обработчик отправки формы
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    performSearch(query);
+  };
+
+  return (
+    <div>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Найти фильм или сериал..."
+        />
+        <button type="submit" disabled={loading}>
+          {loading ? "Поиск..." : "Найти"}
+        </button>
+      </form>
+
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      <h2>Найденные фильмы</h2>
+      {/* ... Отображение списка foundMovies ... */}
+      <h2>Найденные сериалы</h2>
+      {/* ... Отображение списка foundTvShows ... */}
+    </div>
+  );
+}
+
+export default MediaSearch;
+```
+
+## Пример 6: Получение Деталей Медиа
+
+Этот компонент загружает и отображает детали конкретного фильма или сериала по ID.
+
+```jsx
+import React, { useState, useEffect } from "react";
+import { createTMDBProxyClient, Movie, TVShow, ApiError } from "tmdb-xhzloba";
+
+const client = createTMDBProxyClient("ВАШ_API_КЛЮЧ");
+
+interface MediaDetailsProps {
+  mediaType: "movie" | "tv";
+  mediaId: number;
+}
+
+function MediaDetails({ mediaType, mediaId }: MediaDetailsProps) {
+  const [details, setDetails] = (useState < Movie) | TVShow | (null > null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = (useState < string) | (null > null);
+
+  useEffect(() => {
+    const fetchDetails = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        let fetchedDetails: Movie | TVShow;
+        if (mediaType === "movie") {
+          fetchedDetails = await client.media.getMovieDetails(mediaId, {
+            language: "ru",
+            appendToResponse: ["credits", "videos"], // Пример доп. данных
+          });
+        } else {
+          fetchedDetails = await client.media.getTVShowDetails(mediaId, {
+            language: "ru",
+            appendToResponse: ["credits", "videos"], // Пример доп. данных
+          });
+        }
+        setDetails(fetchedDetails);
+      } catch (err) {
+        console.error("Ошибка загрузки деталей:", err);
+        if (err instanceof ApiError) {
+          setError(
+            `Ошибка API (${err.statusCode}): ${err.apiMessage || err.message}`
+          );
+        } else {
+          setError("Произошла неизвестная ошибка");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDetails();
+  }, [mediaId, mediaType]); // Перезагружаем при смене ID или типа
+
+  if (loading) return <p>Загрузка деталей...</p>;
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
+  if (!details) return <p>Детали не найдены.</p>;
+
+  // Отображаем детали в зависимости от типа
+  const isMovie = details instanceof Movie;
+  const title = isMovie ? details.title : details.name;
+  const posterUrl = details.getPosterUrl("w185");
+  const directors = details.getDirectors ? details.getDirectors() : [];
+
+  return (
+    <div>
+      <h1>{title}</h1>
+      {posterUrl && <img src={posterUrl} alt={title} />}
+      <p>{details.overview}</p>
+      {/* Отображение доп. данных, например, режиссеров */}
+      {directors.length > 0 && (
+        <p>Режиссеры: {directors.map((d) => d.name).join(", ")}</p>
+      )}
+      {/* ... Отображение других деталей, видео и т.д. ... */}
+    </div>
+  );
+}
+
+export default MediaDetails;
+```
