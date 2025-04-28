@@ -71,13 +71,17 @@ export function createTMDBProxyClient(
 
     console.groupEnd(); // Закрываем основную группу
 
-    // Выносим ссылку на NPM из группы
+    // Выносим ссылку на NPM из группы с новым текстом
     const npmLink = `https://www.npmjs.com/package/${libName}`;
     const npmNameStyle =
       "background: #CB3837; color: #ffffff; padding: 3px; border-radius: 3px 0 0 3px; font-weight: bold;"; // Красный NPM фон
     const npmLinkStyle =
       "background: #FCCECB; color: #CB3837; padding: 3px; border-radius: 0 3px 3px 0; font-weight: bold; text-decoration: underline;"; // Светло-красный NPM фон
-    console.log(`%c NPM %c ${npmLink}`, npmNameStyle, npmLinkStyle);
+    console.log(
+      `%c Установить пакет - NPM %c ${npmLink}`,
+      npmNameStyle,
+      npmLinkStyle
+    );
   } catch (e) {
     /* Игнорируем */
   }
@@ -85,41 +89,136 @@ export function createTMDBProxyClient(
   const personService = new PersonService(apiClient);
   const mediaService = new MediaService(apiClient);
 
-  // --- Вывод методов сервисов (в правильном месте) ---
-  try {
-    const getMethods = (service: any): string[] => {
-      return Object.getOwnPropertyNames(Object.getPrototypeOf(service)).filter(
-        (prop) =>
-          typeof service[prop] === "function" &&
-          prop !== "constructor" &&
-          !prop.startsWith("_") &&
-          !prop.startsWith("#")
-      );
-    };
+  // --- Функция помощи ---
+  const help = () => {
+    console.group("--- TMDB Client Help ---");
 
-    const mediaMethods = getMethods(mediaService);
-    if (mediaMethods.length > 0) {
-      console.groupCollapsed(
-        "%c Media Service Methods",
-        "color: #0366d6; font-weight: bold;"
-      );
-      console.log(mediaMethods.join(", "));
-      console.groupEnd();
-    }
+    // --- Media Service ---
+    console.group(
+      "%c client.media: %cСервис для работы с фильмами, сериалами и коллекциями.",
+      "font-weight: bold; color: #0366d6;",
+      ""
+    );
+    console.log(
+      "  .getPopular(page?) - Получить список популярных фильмов и сериалов (смешанный). -> Promise<PaginatedMediaResult>"
+    );
+    console.log(
+      "  .getPopularMovies(page?) - Получить список ТОЛЬКО популярных фильмов. -> Promise<PaginatedMovieResult>"
+    );
+    console.log(
+      "  .getPopularTVShows(page?) - Получить список ТОЛЬКО популярных сериалов. -> Promise<PaginatedTVShowResult>"
+    );
+    console.log(
+      "  .getLatest(page?) - Получить список последних добавленных фильмов и сериалов (смешанный). -> Promise<PaginatedMediaResult>"
+    );
+    console.log(
+      "  .getLatestMovies(page?) - Получить список ТОЛЬКО последних добавленных фильмов. -> Promise<PaginatedMovieResult>"
+    );
+    console.log(
+      "  .getLatestTvShows(page?) - Получить список ТОЛЬКО последних добавленных сериалов. -> Promise<PaginatedTVShowResult>"
+    );
+    console.log(
+      "  .getNowPlaying(page?) - Получить список актуальных (в прокате/эфире) фильмов и сериалов (смешанный). -> Promise<PaginatedMediaResult>"
+    );
+    console.log(
+      "  .getNowPlayingMovies(page?) - Получить список ТОЛЬКО актуальных фильмов. -> Promise<PaginatedMovieResult>"
+    );
+    console.log(
+      "  .getNowPlayingTvShows(page?) - Получить список ТОЛЬКО актуальных сериалов. -> Promise<PaginatedTVShowResult>"
+    );
+    console.log(
+      "  .searchMovies(query, page?) - Искать фильмы по текстовому запросу. -> Promise<PaginatedMovieResult>"
+    );
+    console.log(
+      "  .searchTVShows(query, page?) - Искать сериалы по текстовому запросу. -> Promise<PaginatedTVShowResult>"
+    );
+    console.log(
+      "  .getMovieDetails(movieId, options?) - Получить детальную информацию о фильме. options: { language?, appendToResponse? }. -> Promise<Movie>"
+    );
+    console.log(
+      "  .getTVShowDetails(tvShowId, options?) - Получить детальную информацию о сериале. options: { language?, appendToResponse? }. -> Promise<TVShow>"
+    );
+    console.log(
+      "  .getCollectionDetails(collectionId, options?) - Получить детали коллекции фильмов. options: { language? }. -> Promise<Collection>"
+    );
+    console.log("  (См. также классы Movie, TVShow, Collection ниже)");
+    console.groupEnd(); // End Media Service
 
-    const personMethods = getMethods(personService);
-    if (personMethods.length > 0) {
-      console.groupCollapsed(
-        "%c Person Service Methods",
-        "color: #d73a49; font-weight: bold;"
-      );
-      console.log(personMethods.join(", "));
-      console.groupEnd();
-    }
-  } catch (introspectionError) {
-    console.warn("Could not list service methods.", introspectionError);
-  }
-  // -----------------------------------------------
+    // --- Person Service ---
+    console.group(
+      "%c client.person: %cСервис для работы с данными персон.",
+      "font-weight: bold; color: #d73a49;",
+      ""
+    );
+    console.log(
+      "  .getPersonDetails(personId, options?) - Получить детальную информацию о персоне. options: { language?, appendToResponse? ['combined_credits'] }. -> Promise<Person>"
+    );
+    console.log("  (См. также класс Person ниже)");
+    console.groupEnd(); // End Person Service
+
+    // --- Entities (Классы) ---
+    console.group(
+      "%c Entities (Классы, возвращаемые сервисами): %c",
+      "font-weight: bold; color: #6f42c1;",
+      ""
+    );
+    console.log("    Movie: Детали фильма.");
+    console.log("      .title, .releaseDate, .runtime, .tagline, ... (поля)");
+    console.log(
+      "      .getPosterUrl(size?), .getBackdropUrl(size?), .getDirectors(), .getCast(), ... (методы)"
+    );
+    console.log(
+      "      .getFormattedReleaseDate(locale?), .getFormattedRuntime()"
+    );
+    console.log("    TVShow: Детали сериала.");
+    console.log(
+      "      .name, .firstAirDate, .numberOfSeasons, .numberOfEpisodes, .seasons, ... (поля)"
+    );
+    console.log(
+      "      .getPosterUrl(size?), .getBackdropUrl(size?), .getDirectors(), .getCast(), ... (методы)"
+    );
+    console.log("      .getFormattedFirstAirDate(locale?)");
+    console.log("    Person: Детали персоны.");
+    console.log(
+      "      .name, .biography, .birthday, .profilePath, .castCredits, .crewCredits, ... (поля)"
+    );
+    console.log(
+      "      .getProfileUrl(size?), .getMoviesActedIn(), .getTvShowsActedIn(), .getVoicedWorks(), .getKnownForWorks(limit?), ... (методы)"
+    );
+    console.log("    Collection: Детали коллекции.");
+    console.log(
+      "      .name, .overview, .posterPath, .backdropPath, .parts (Movie[]), ... (поля)"
+    );
+    console.log("      .getPosterUrl(size?), .getBackdropUrl(size?)");
+    console.log(
+      "    (Используйте console.dir(entity) для просмотра всех полей/методов)"
+    );
+    console.groupEnd(); // End Entities
+
+    // --- Utilities ---
+    console.group(
+      "%c Utilities (импортируются отдельно): %c",
+      "font-weight: bold; color: #2da44e;",
+      ""
+    );
+    console.log(
+      "    ImageConfig: Управление URL изображений (import { ImageConfig } from 'tmdb-xhzloba')"
+    );
+    console.log(
+      "      .setBaseUrl(newUrl), .getBaseUrl(), .getAvailablePosterSizes(), .getAvailableBackdropSizes(), ... (статические методы)"
+    );
+    console.log(
+      "    ApiError: Класс ошибки API (import { ApiError } from 'tmdb-xhzloba')"
+    );
+    console.log(
+      "      error.statusCode, error.apiMessage, error.message (свойства при catch)"
+    );
+    console.groupEnd(); // End Utilities
+
+    console.log("Для подробностей см. документацию или исходный код.");
+    console.groupEnd(); // End TMDB Client Help
+  };
+  // ---------------------
 
   return {
     /**
@@ -134,5 +233,9 @@ export function createTMDBProxyClient(
      * Низкоуровневый API клиент (для продвинутых сценариев).
      */
     _apiClient: apiClient, // Доступ к базовому клиенту для расширенных случаев
+    /**
+     * Выводит список доступных методов в консоль.
+     */
+    help: help,
   };
 }
