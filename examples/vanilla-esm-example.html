@@ -394,7 +394,7 @@
       //   TVShow,
       // } from "../dist/index.esm.js"; // Используем локальную сборку
       import {
-        createXhZlobaClient,
+        createTMDBProxyClient,
         ApiError,
         Movie,
         TVShow,
@@ -409,7 +409,7 @@
       // }
       // Передаем undefined первым аргументом для baseURL (чтобы взять дефолтный),
       // а API_KEY - вторым, как требует функция.
-      const client = createXhZlobaClient(undefined, API_KEY);
+      const client = createTMDBProxyClient(undefined, API_KEY);
 
       // --- Получение элементов DOM ---
       const mediaListElement = document.getElementById("media-list");

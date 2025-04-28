@@ -2,7 +2,7 @@
 // Запуск: ts-node test-client.ts (из корневой папки проекта)
 
 import {
-  createXhZlobaClient,
+  createTMDBProxyClient,
   ApiClient,
   ApiError,
   Movie,
@@ -17,14 +17,19 @@ import {
 
 console.log("---> Импорт из ./src/index прошел успешно!");
 
-const API_KEY = "4ef0d7355d9ffb5151e987764708ce96"; // Определяем ключ
 const BASE_URL = "https://tmdb.kurwa-bober.ninja/"; // Определяем URL
+const API_KEY = process.env.TMDB_API_KEY;
 
 // Создаем отдельный ApiClient ТОЛЬКО для теста сырых запросов
-const rawApiClient = new ApiClient(BASE_URL, API_KEY);
+// const rawApiClient = new ApiClient(BASE_URL, API_KEY); // Пока закомментируем или исправим позже, если нужен
 
-// Создаем обычный клиент для теста сервисов, передавая ключ и используя новую функцию
-const client = createXhZlobaClient(BASE_URL, API_KEY);
+if (!API_KEY) {
+  console.error("Необходимо установить переменную окружения TMDB_API_KEY");
+  process.exit(1);
+}
+
+// Инициализация клиента (только после проверки API_KEY)
+const client = createTMDBProxyClient(BASE_URL, API_KEY!);
 
 async function runTest() {
   console.log("Запускаем тест API клиента...");
@@ -35,13 +40,13 @@ async function runTest() {
       "\n0.1 Тестируем СЫРОЙ ответ API для Popular Movies (cat=movie&sort=top)..."
     );
     try {
-      const rawPopularMoviesResponse = await rawApiClient.get<any>("", {
-        cat: "movie",
-        sort: "top",
-        page: 1,
-      });
+      // const rawPopularMoviesResponse = await rawApiClient.get<any>("", {
+      //   cat: "movie",
+      //   sort: "top",
+      //   page: 1,
+      // });
       console.log("  ---> СЫРОЙ ответ API для Popular Movies:");
-      console.dir(rawPopularMoviesResponse, { depth: null });
+      // console.dir(rawPopularMoviesResponse, { depth: null });
     } catch (rawError) {
       console.error(
         "  ОШИБКА при получении сырого ответа Popular Movies:",
@@ -53,12 +58,12 @@ async function runTest() {
       "\n0.2 Тестируем СЫРОЙ ответ API для Now Playing (sort=now_playing)..."
     );
     try {
-      const rawNowPlayingResponse = await rawApiClient.get<any>("", {
-        sort: "now_playing",
-        page: 1,
-      });
+      // const rawNowPlayingResponse = await rawApiClient.get<any>("", {
+      //   sort: "now_playing",
+      //   page: 1,
+      // });
       console.log("  ---> СЫРОЙ ответ API для Now Playing:");
-      console.dir(rawNowPlayingResponse, { depth: null });
+      // console.dir(rawNowPlayingResponse, { depth: null });
     } catch (rawError) {
       console.error(
         "  ОШИБКА при получении сырого ответа Now Playing:",
@@ -70,12 +75,12 @@ async function runTest() {
       "\n0.3 Тестируем СЫРОЙ ответ API для TV Show Details (id: 265235)..."
     );
     try {
-      const rawTVDetailsResponse = await rawApiClient.get<any>(`3/tv/265235`, {
-        append_to_response: "keywords,alternative_titles,content_ratings",
-        language: "ru",
-      });
+      // const rawTVDetailsResponse = await rawApiClient.get<any>(`3/tv/265235`, {
+      //   append_to_response: "keywords,alternative_titles,content_ratings",
+      //   language: "ru",
+      // });
       console.log("  ---> СЫРОЙ ответ API для TV Show Details:");
-      console.dir(rawTVDetailsResponse, { depth: null });
+      // console.dir(rawTVDetailsResponse, { depth: null });
     } catch (rawError) {
       console.error(
         "  ОШИБКА при получении сырого ответа TV Show Details:",

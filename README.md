@@ -42,20 +42,18 @@ yarn add tmdb-xhzloba
       // Проверяем, появилась ли наша магия
       if (window.tmdbXhzloba) {
         // Достаем из нее пульт
-        const { createXhZlobaClient, ApiError, Movie, TVShow } =
+        const { createTMDBProxyClient, ApiError, Movie, TVShow } =
           window.tmdbXhzloba;
 
         // Включаем пульт!
-        const client = createXhZlobaClient(MY_API_KEY);
+        const client = createTMDBProxyClient(MY_API_KEY);
         console.log("Пульт готов!", client);
 
         // Теперь можно им пользоваться!
         // Например, попросим популярные штуки:
         client.media
           .getPopular()
-          .then((data) => {
-            console.log("Вот что популярно:", data.items);
-          })
+          .then((paginatedResult) => console.log(paginatedResult.items))
           .catch((error) => console.error("Ой, ошибка:", error));
       } else {
         console.error("Магия не загрузилась! Проверь путь к файлу.");
@@ -71,7 +69,7 @@ yarn add tmdb-xhzloba
 <script type="module">
   // Загружаем пульт и другие нужные штуки
   import {
-    createXhZlobaClient,
+    createTMDBProxyClient,
     ApiError,
     Movie,
     TVShow,
@@ -82,7 +80,7 @@ yarn add tmdb-xhzloba
   const MY_API_KEY = "СЮДА_ВСТАВЬ_СВОЙ_API_КЛЮЧ";
 
   // Включаем пульт!
-  const client = createXhZlobaClient(MY_API_KEY);
+  const client = createTMDBProxyClient(MY_API_KEY);
   console.log("Пульт готов!", client);
 
   // Пробуем попросить популярные штуки:
@@ -103,21 +101,23 @@ yarn add tmdb-xhzloba
 Просто импортируй и используй:
 
 ```javascript
-import { createXhZlobaClient, ApiError, Movie, TVShow } from "tmdb-xhzloba";
+import { createTMDBProxyClient, ApiError, Movie, TVShow } from "tmdb-xhzloba";
 
 const MY_API_KEY = "СЮДА_ВСТАВЬ_СВОЙ_API_КЛЮЧ";
 
 // Включаем пульт!
-const client = createXhZlobaClient(MY_API_KEY);
+const client = createTMDBProxyClient(MY_API_KEY);
 
 // Используем:
 client.media
   .getPopular()
-  .then((data) => console.log(data.items))
+  .then((paginatedResult) => console.log(paginatedResult.items))
   .catch((error) => console.error(error));
 ```
 
-*(Примечание: По умолчанию пульт использует адрес прокси `https://tmdb.kurwa-bober.ninja/`. Чтобы использовать этот адрес, просто передай **только** API ключ: `createXhZlobaClient('ТВОЙ_API*КЛЮЧ')`. Если тебе нужен другой адрес, передай его **первым** аргументом, а API ключ **вторым**: `createXhZlobaClient('https://твой.адрес.прокси/', 'ТВОЙ*API*КЛЮЧ')`)\_
+*(Примечание: По умолчанию пульт использует адрес прокси `https://tmdb.kurwa-bober.ninja/`.
+Чтобы использовать его, передай только API ключ: `createTMDBProxyClient('ТВОЙ_API*КЛЮЧ')`.
+Если нужен другой адрес (`baseUrl`), передай его **первым** аргументом, а API ключ **вторым**: `createTMDBProxyClient('https://твой.адрес.прокси/', 'ТВОЙ*API*КЛЮЧ')`)\_
 
 ## Что Умеет Пульт? (Кнопки на `client.media`)
 
@@ -344,45 +344,97 @@ client.media
 
 Библиотека сама позаботится о том, чтобы собрать все доступные данные в удобный для просмотра формат.
 
+## Пример Использования в React
+
+Вот базовый пример, как использовать библиотеку в React-компоненте для загрузки и отображения популярных фильмов и сериалов.
+
+```jsx
+import React, { useState, useEffect } from 'react';
+import { createTMDBProxyClient, MediaItem, Movie, TVShow, ApiError } from 'tmdb-xhzloba';
+
+// Инициализируем клиент один раз
+const apiClient = createTMDBProxyClient("ВАШ_API_КЛЮЧ");
+
+function PopularMedia() {
+  const [media, setMedia] = useState<MediaItem[]>([]); // Используем MediaItem для смешанного списка
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPopular = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await apiClient.media.getPopular();
+        setMedia(data.items);
+      } catch (err) {
+        console.error("Ошибка загрузки:", err);
+        if (err instanceof ApiError) {
+          setError(`Ошибка API (${err.statusCode}): ${err.apiMessage || err.message}`);
+        } else if (err instanceof Error) {
+          setError(`Произошла ошибка: ${err.message}`);
+        } else {
+          setError("Произошла неизвестная ошибка");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPopular();
+  }, []); // Пустой массив зависимостей означает, что эффект выполнится один раз при монтировании
+
+  if (loading) {
+    return <div>Загрузка...</div>;
+  }
+
+  if (error) {
+    return <div>Ошибка: {error}</div>;
+  }
+
+  return (
+    <div>
+      <h1>Популярные фильмы и сериалы</h1>
+      <ul>
+        {media.map((item) => (
+          <li key={item.id}>
+            <img
+              src={item.getPosterUrl('w92')} // Получаем URL постера
+              alt={item instanceof Movie ? item.title : item.name} // У Movie есть title, у TVShow - name
+              width="92"
+              style={{ marginRight: '10px', verticalAlign: 'middle' }}
+            />
+            {item instanceof Movie ? item.title : item.name}
+            {' '}
+            ({item.getFormattedReleaseDate ? item.getFormattedReleaseDate('ru-RU') : item.getFormattedFirstAirDate ? item.getFormattedFirstAirDate('ru-RU') : 'Дата неизвестна'})
+            {' - '}
+            ⭐ {item.voteAverage.toFixed(1)}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default PopularMedia;
+
+```
+
+**Пояснения к примеру:**
+
+1.  **Инициализация Клиента:** `createTMDBProxyClient` вызывается **вне** компонента, чтобы не создавать новый экземпляр при каждом рендере.
+2.  **Состояние:** `useState` используется для хранения списка медиа (`media`), статуса загрузки (`loading`) и возможной ошибки (`error`).
+3.  **Загрузка Данных:** `useEffect` с пустым массивом зависимостей `[]` используется для выполнения запроса к API (`apiClient.media.getPopular()`) только **один раз** после первого рендера компонента.
+4.  **Обработка Загрузки и Ошибок:** Отображаются сообщения "Загрузка..." или текст ошибки, пока данные не получены или если произошла проблема. Используется `try...catch...finally` для управления состоянием загрузки и ошибок.
+5.  **Отображение:** Метод `map` используется для итерации по массиву `media`.
+6.  **Определение Типа:** `instanceof Movie` используется для определения, является ли элемент фильмом или сериалом, чтобы получить правильное название (`title` или `name`) и вызвать соответствующий метод для форматирования даты (`getFormattedReleaseDate` или `getFormattedFirstAirDate`).
+7.  **Изображения:** Используется метод `getPosterUrl()` для получения URL постера нужного размера.
+8.  **Типизация:** Пример использует TypeScript для лучшей читаемости и надежности, указывая типы для состояния (`useState<MediaItem[]>`) и ошибок.
+
 ## Картинки (`ImageConfig`)
 
 Иногда нужно узнать, какие размеры картинок вообще бывают или поменять адрес, откуда они грузятся. Для этого есть `ImageConfig`.
 
-```javascript
-import { ImageConfig } from "tmdb-xhzloba";
-
-// Узнать доступные размеры постеров:
-console.log(ImageConfig.getAvailablePosterSizes()); // ['w92', 'w154', ...]
-
-// Поменять базовый адрес для картинок (если очень нужно):
-// ImageConfig.setBaseUrl('https://другой.адрес.картинок/'); // прокси для кратинок для TMDB
 ```
 
-## Если Что-то Пошло Не Так (Ошибки)
-
-Если пульт не смог получить информацию (например, нет интернета или ключ API неправильный), он сообщит об ошибке.
-
-Нужно ловить ошибки с помощью `try...catch` (если используешь `async/await`) или метода `.catch()` (если используешь `.then()`).
-
-Особый тип ошибки - `ApiError`. У нее могут быть дополнительные детали:
-
-- `statusCode`: Номер ошибки от сервера (например, 401 - неверный ключ, 404 - не найдено).
-- `apiMessage`: Сообщение от сервера (если он его прислал).
-
-```javascript
-try {
-  const details = await client.media.getMovieDetails(123456789); // Несуществующий ID
-} catch (error) {
-  console.error("Ой! Ошибка!");
-  if (error instanceof ApiError) {
-    console.error(`  Статус: ${error.statusCode}`);
-    console.error(`  Сообщение от API: ${error.apiMessage}`);
-  } else {
-    console.error("  Непонятная ошибка:", error);
-  }
-}
 ```
-
-## Типы для TypeScript
-
-Если ты используешь TypeScript, библиотека экспортирует все нужные типы (например, `Movie`, `TVShow`, `Genre`, `CastMember`), чтобы твой код был еще надежнее.

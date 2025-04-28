@@ -42,11 +42,11 @@ yarn add tmdb-xhzloba
       // Проверяем, появилась ли наша магия
       if (window.tmdbXhzloba) {
         // Достаем из нее пульт
-        const { createXhZlobaClient, ApiError, Movie, TVShow } =
+        const { createTMDBProxyClient, ApiError, Movie, TVShow } =
           window.tmdbXhzloba;
 
         // Включаем пульт!
-        const client = createXhZlobaClient(MY_API_KEY);
+        const client = createTMDBProxyClient(MY_API_KEY);
         console.log("Пульт готов!", client);
 
         // Теперь можно им пользоваться!
@@ -71,7 +71,7 @@ yarn add tmdb-xhzloba
 <script type="module">
   // Загружаем пульт и другие нужные штуки
   import {
-    createXhZlobaClient,
+    createTMDBProxyClient,
     ApiError,
     Movie,
     TVShow,
@@ -82,7 +82,7 @@ yarn add tmdb-xhzloba
   const MY_API_KEY = "СЮДА_ВСТАВЬ_СВОЙ_API_КЛЮЧ";
 
   // Включаем пульт!
-  const client = createXhZlobaClient(MY_API_KEY);
+  const client = createTMDBProxyClient(MY_API_KEY);
   console.log("Пульт готов!", client);
 
   // Пробуем попросить популярные штуки:
@@ -103,12 +103,12 @@ yarn add tmdb-xhzloba
 Просто импортируй и используй:
 
 ```javascript
-import { createXhZlobaClient, ApiError, Movie, TVShow } from "tmdb-xhzloba";
+import { createTMDBProxyClient, ApiError, Movie, TVShow } from "tmdb-xhzloba";
 
 const MY_API_KEY = "СЮДА_ВСТАВЬ_СВОЙ_API_КЛЮЧ";
 
 // Включаем пульт!
-const client = createXhZlobaClient(MY_API_KEY);
+const client = createTMDBProxyClient(MY_API_KEY);
 
 // Используем:
 client.media
@@ -117,7 +117,7 @@ client.media
   .catch((error) => console.error(error));
 ```
 
-*(Примечание: По умолчанию пульт использует адрес прокси `https://tmdb.kurwa-bober.ninja/`. Чтобы использовать этот адрес, просто передай **только** API ключ: `createXhZlobaClient('ТВОЙ_API*КЛЮЧ')`. Если тебе нужен другой адрес, передай его **первым** аргументом, а API ключ **вторым**: `createXhZlobaClient('https://твой.адрес.прокси/', 'ТВОЙ*API*КЛЮЧ')`)\_
+*(Примечание: По умолчанию пульт использует адрес прокси `https://tmdb.kurwa-bober.ninja/`. Чтобы использовать этот адрес, просто передай **только** API ключ: `createTMDBProxyClient('ТВОЙ_API*КЛЮЧ')`. Если тебе нужен другой адрес, передай его **первым** аргументом, а API ключ **вторым**: `createTMDBProxyClient('https://твой.адрес.прокси/', 'ТВОЙ*API*КЛЮЧ')`)\_
 
 ## Что Умеет Пульт? (Кнопки на `client.media`)
 

@@ -54,14 +54,14 @@
     <script type="module">
       // Импортируем фабричную функцию и нужные типы/классы
       import {
-        createXhZlobaClient,
+        createTMDBProxyClient,
         ApiError,
         Movie,
         TVShow,
       } from "https://unpkg.com/tmdb-xhzloba@latest/dist/index.esm.js";
 
       // --- ВАЖНО: Замените на ваш реальный ключ API! ---
-      // Нужен только ключ API (v3) для работы с прокси через createXhZlobaClient
+      // Нужен только ключ API (v3) для работы с прокси через createTMDBProxyClient
       const API_KEY = "4ef0d7355d9ffb5151e987764708ce96"; // V3 Key
       // const ACCESS_TOKEN = "YOUR_TMDB_ACCESS_TOKEN"; // V4 Access Token - не используется фабрикой по умолчанию
       // -----------------------------------------------
@@ -76,7 +76,7 @@
       try {
         // Используем фабричную функцию, как рекомендовано в README
         // Передаем undefined для baseURL (чтобы использовать дефолтный) и ключ API вторым аргументом
-        client = createXhZlobaClient(undefined, API_KEY);
+        client = createTMDBProxyClient(undefined, API_KEY);
         console.log(
           "Клиент XhZloba инициализирован через фабрику с API ключом."
         );
