@@ -183,6 +183,18 @@ client.media
 - `originalLanguage`: `string` - Оригинальный язык (код).
 - `genres`: `Genre[] | null` - Массив жанров (требует `getDetails`).
 - `status`: `string | null` - Статус ('Released', 'Ended', 'In Production'...). (требует `getDetails`).
+
+- **`❗ Специальные Поля от Прокси (могут отсутствовать):`**
+
+  - `names`: `string[] | null` - Массив названий (например, русское и оригинальное).
+  - `pgRating`: `number | null` - Возрастной рейтинг (число).
+  - `releaseQuality`: `string | null` - Качество релиза (например, 'webdl', 'camrip').
+  - `kinopoiskId`: `string | null` - ID на Кинопоиске.
+  - `kpRating`: `number | null` - Рейтинг на Кинопоиске.
+  - `imdbId`: `string | null` - ID на IMDb (может дублировать стандартное поле TMDB).
+  - `imdbRating`: `number | null` - Рейтинг на IMDb.
+  - `lastAirDate`: `string | null` - Дата последнего выхода (иногда присутствует и у фильмов).
+
 - `getPosterUrl(size?)`: Возвращает полный URL постера указанного `size` (e.g., 'w185', 'w500').
   - ```typescript
     const poster = movie.getPosterUrl("w500"); // => "https://imagetmdb.com/t/p/w500/...jpg"
