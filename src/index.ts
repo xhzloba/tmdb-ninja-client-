@@ -4,15 +4,7 @@ export { ApiClient, ApiError } from "./core/ApiClient";
 export { ImageConfig } from "./config";
 
 // --- Экспорт Сущностей --- //
-export {
-  MediaItem,
-  Movie,
-  TVShow,
-  Person,
-  PersonCastCreditItem,
-  PersonCrewCreditItem,
-  Collection, // Добавлен Collection
-} from "./entities";
+export { MediaItem, Movie, TVShow, Person, Collection } from "./entities";
 
 // --- Экспорт Основных Типов --- //
 export type {
@@ -21,16 +13,8 @@ export type {
   ProductionCompany,
   ProductionCountry,
   SpokenLanguage,
-  // Типы для списков
-  PaginatedResponse,
-  PaginatedMediaResult,
-  PaginatedMovieResult,
-  PaginatedTVShowResult,
-  // Типы для деталей
-  MovieDetailsOptions,
-  TVShowDetailsOptions,
-  PersonDetailsOptions,
-  CollectionDetailsResponse, // Добавлен тип ответа коллекции
+  // Типы для деталей (оставляем только те, что НЕ в сервисах)
+  CollectionDetailsResponse,
   // Доп. типы для appendToResponse
   CreditsResponse,
   CastMember,
@@ -43,9 +27,28 @@ export type {
   Keyword,
   ExternalIdsResponse,
   WatchProviderResponse,
-  WatchProviderDetails,
   // ... можно добавить другие по мере необходимости
 } from "./types";
+
+// Основные сервисы
+export { MediaService } from "./services/MediaService";
+export { PersonService } from "./services/PersonService";
+
+// Типы, специфичные для сервисов (опции методов, результаты с пагинацией)
+export type {
+  PaginatedMediaResult,
+  PaginatedMovieResult,
+  PaginatedTVShowResult,
+  MediaDetailsOptions, // Объединенный тип для опций Movie/TV
+} from "./services/MediaService";
+export type { PersonDetailsOptions } from "./services/PersonService";
+
+// Утилиты
+// export { getImageUrl } from "./utils/getImageUrl"; // Закомментировано, т.к. путь/файл не найден
+
+// Реэкспорт всех типов и type guards из папки types
+// (Предполагается, что types/index.ts экспортирует все из media.ts и person.ts)
+export * from "./types";
 
 /*
 // Пример использования для быстрого старта (можно раскомментировать)
