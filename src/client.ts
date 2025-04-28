@@ -46,40 +46,37 @@ export function createTMDBProxyClient(
   try {
     const version = process.env.PACKAGE_VERSION || "dev";
     const homepage = process.env.PACKAGE_HOMEPAGE || "N/A";
+    const libName = "tmdb-xhzloba";
 
-    // Основная информация
-    console.log(
-      `%c tmdb-xhzloba %c v${version} %c by xhzloba %c->%c ${homepage}`,
+    console.groupCollapsed(
+      // Используем groupCollapsed, чтобы было свернуто по умолчанию
+      `%c ${libName} %c v${version} %c Initialized`,
       "background: #023047; color: #ffb703; padding: 3px; border-radius: 3px 0 0 3px; font-weight: bold;",
       "background: #ffb703; color: #023047; padding: 3px; border-radius: 0 3px 3px 0; font-weight: bold;",
-      "background: #8ecae6; color: #023047; padding: 3px; border-radius: 3px; margin-left: 5px; font-weight: bold;",
-      "color: #fb8500; font-weight: bold; margin-left: 5px;",
-      "color: #219ebc; text-decoration: underline; font-weight: bold;"
+      "color: green; font-weight: bold; margin-left: 5px;"
     );
 
-    // Дополнительная полезная информация
+    // Дополнительная полезная информация внутри группы
     console.log(
-      `%c Base URL: %c${baseURL}`,
-      "color: #fb8500; font-weight: bold;",
-      "color: #023047;"
+      `%cBase URL:%c ${baseURL}`,
+      "font-weight: bold; color: #fb8500;", // Стиль для метки
+      "" // Обычный стиль для значения
     );
     console.log(
-      `%c Available Services: %c client.media, client.person`,
-      "color: #fb8500; font-weight: bold;",
-      "color: #023047;"
+      `%cServices:%c client.media, client.person`,
+      "font-weight: bold; color: #fb8500;",
+      ""
     );
+    // Убрали Quick Start log
     console.log(
-      `%c Quick Start: %c Use await client.media.getPopular() to fetch popular items.`,
-      "color: #219ebc; font-weight: bold;",
-      "color: #023047;"
+      `%cDocs:%c ${homepage}`,
+      "font-weight: bold; color: #219ebc;", // Стиль для метки
+      "text-decoration: underline; color: #219ebc;" // Стиль для кликабельной ссылки
     );
-    console.log(
-      `%c Docs: %c See README for details: ${homepage}`,
-      "color: #219ebc; font-weight: bold;",
-      "color: #023047; text-decoration: underline;"
-    );
+
+    console.groupEnd(); // Закрываем группу
   } catch (e) {
-    /* Игнорируем ошибку, если process недоступен */
+    /* Игнорируем */
   }
 
   const personService = new PersonService(apiClient);
