@@ -317,7 +317,7 @@ client.media
 
 ```jsx
 import React, { useState, useEffect } from 'react';
-import { createTMDBProxyClient, MediaItem, Movie, TVShow, ApiError } from 'tmdb-xhzloba';
+import { createTMDBProxyClient, MediaItem, Movie, TVShow, ApiError, ImageConfig } from 'tmdb-xhzloba';
 
 // Инициализируем клиент один раз
 const apiClient = createTMDBProxyClient("ВАШ_API_КЛЮЧ");
@@ -461,172 +461,280 @@ export default PopularMedia;
       .catch((error) => console.error("Ошибка загрузки персоны:", error));
     ```
 
-## Что Внутри Персоны (`Person`)?
+## Что Внутри Объекта `Person`?
 
-Когда ты получаешь информацию о человеке, она приходит в виде объекта `Person`.
+Когда ты получаешь детали персоны с помощью `getPersonDetails`, ты получаешь экземпляр класса `Person`. У него есть много полей (имя, биография, день рождения и т.д.) и удобные методы для работы с фильмографией (если ты запросил `combined_credits`).
 
-**Основная Информация:**
+**Полезные Поля (Геттеры):**
 
 - `id`: Уникальный номер (ID).
-- `name`: Имя. 🧑‍🎨
-- `adult`: Контент для взрослых? (`true` или `false`).
-- `alsoKnownAs`: Список других известных имен (псевдонимов).
-- `biography`: Биография. 📜
-- `birthday`: Дата рождения (`YYYY-MM-DD`) или `null`.
-- `deathday`: Дата смерти (`YYYY-MM-DD`) или `null`. RIP
-- `gender`: Пол (1 - женский, 2 - мужской, 3 - не бинарный, 0 - не указан). ♀️♂️
-- `homepage`: Ссылка на домашнюю страницу или `null`.
-- `imdbId`: ID на IMDb или `null`.
-- `knownForDepartment`: Основной департамент работы (например, 'Acting', 'Directing'). 🎬
-- `placeOfBirth`: Место рождения или `null`. 🌍
-- `popularity`: Насколько популярен (число).
-- `profilePath`: Кусочек ссылки на **главное фото профиля**.
+- `name`: Имя персоны.
+- `biography`: Биография.
+- `birthday`: Дата рождения (или `null`).
+- `deathday`: Дата смерти (или `null`).
+- `placeOfBirth`: Место рождения (или `null`).
+- `profilePath`: Кусочек ссылки на **фото профиля**.
+- `knownForDepartment`: В какой области наиболее известен (`Acting`, `Directing` и т.д.).
+- `castCredits`: **Полный список ролей** (массив `PersonCastCreditItem`). Нужен `combined_credits`.
+- `crewCredits`: **Полный список работ в команде** (массив `PersonCrewCreditItem`). Нужен `combined_credits`.
 
-**Фильмография (если запрашивали `appendToResponse: ['combined_credits']`)** 🎞️
+**Удобные Методы:**
 
-- `castCredits`: Массив объектов `PersonCastCreditItem`, представляющих **роли** человека в фильмах и сериалах.
-- `crewCredits`: Массив объектов `PersonCrewCreditItem`, представляющих **работы** человека в съемочной группе.
+Все методы ниже требуют, чтобы `Person` был получен с `{ appendToResponse: ['combined_credits'] }`.
 
-**Что Внутри Элемента Фильмографии (`PersonCastCreditItem` / `PersonCrewCreditItem`)?**
+- **`getProfileUrl( [размер] )`**
 
-- `media`: Объект `Movie` или `TVShow`, к которому относится кредит. Ты можешь использовать все его методы (`getPosterUrl`, `title`, `name` и т.д.).
-- `creditId`: Уникальный ID самого кредита.
-- **Для `PersonCastCreditItem` (роли):**
-  - `character`: Имя персонажа.
-  - `order`: Порядок в титрах (не всегда есть).
-  - `episodeCount`: Количество эпизодов (для роли в сериале).
-- **Для `PersonCrewCreditItem` (команда):**
-  - `department`: Департамент (Writing, Production, Directing...).
-  - `job`: Должность (Director, Writer, Producer...).
-  - `episodeCount`: Количество эпизодов (может быть для создателей/продюсеров).
+  - 🤔 **Что делает:** Формирует **полный URL для фото профиля**. Можно указать желаемый размер (например, `'w185'`, `'h632'`, по умолчанию `'original'`).
+  - ✅ **Что вернет:** Строку с URL или `null`.
+  - ```javascript
+    const photoUrl = person.getProfileUrl("w185");
+    console.log(photoUrl); // https://imagetmdb.com/t/p/w185/путь_к_фото.jpg
+    ```
 
-**Полезные Функции (Методы) у `Person`:**
+- **`getMoviesActedIn()`**
 
-- `getProfileUrl('w185')`: Дает **полную ссылку** на фото профиля нужного размера (например, `'w45'`, `'w185'`, `'h632'`, `'original'`).
-- `getActingRoles()`: Возвращает массив всех актерских ролей (`PersonCastCreditItem[]`). Шорткат для `person.castCredits`.
-- `getCrewWorksByDepartment('Directing')`: Возвращает массив работ (`PersonCrewCreditItem[]`) человека в указанном департаменте (например, `'Directing'`, `'Writing'`, `'Production'`).
-- `getCrewWorksByJob('Director')`: Возвращает массив работ (`PersonCrewCreditItem[]`) человека на указанной должности (например, `'Director'`, `'Writer'`, `'Producer').
+  - 🤔 **Что делает:** Возвращает **список всех фильмов**, в которых персона снималась (из `castCredits`).
+  - ✅ **Что вернет:** Массив объектов `Movie`.
+  - ```javascript
+    const movies = person.getMoviesActedIn();
+    console.log(
+      `Снялся в ${movies.length} фильмах:`,
+      movies.map((m) => m.title)
+    );
+    ```
 
-## Пример Использования в React
+- **`getTvShowsActedIn()`**
 
-Вот базовый пример, как использовать библиотеку в React-компоненте для загрузки и отображения информации о человеке.
+  - 🤔 **Что делает:** Возвращает **список всех сериалов**, в которых персона снималась (из `castCredits`).
+  - ✅ **Что вернет:** Массив объектов `TVShow`.
+  - ```javascript
+    const tvShows = person.getTvShowsActedIn();
+    console.log(
+      `Снялся в ${tvShows.length} сериалах:`,
+      tvShows.map((s) => s.name)
+    );
+    ```
+
+- **`getVoicedWorks()`**
+
+  - 🤔 **Что делает:** Возвращает список **фильмов и сериалов**, где персона работала над **озвучкой**. Проверяет и роли с пометкой `(voice)` в `castCredits`, и работы с должностями типа `Voice Actor` в `crewCredits`.
+  - ✅ **Что вернет:** Массив объектов `Movie` или `TVShow`.
+  - ```javascript
+    const voiced = person.getVoicedWorks();
+    console.log(
+      `Озвучил ${voiced.length} работ:`,
+      voiced.map((w) => (w instanceof Movie ? w.title : w.name))
+    );
+    ```
+
+- **`getKnownForWorks( [лимит] )`**
+
+  - 🤔 **Что делает:** Возвращает список **самых известных работ** (фильмов или сериалов), основываясь на основном департаменте персоны (`knownForDepartment`) и сортировке от API. Можно ограничить количество (по умолчанию **10**).
+  - ✅ **Что вернет:** Массив объектов `Movie` или `TVShow`.
+  - ```javascript
+    const knownFor = person.getKnownForWorks(5); // Получить 5 самых известных работ
+    console.log(
+      "Известен по:",
+      knownFor.map((w) => (w instanceof Movie ? w.title : w.name))
+    );
+    ```
+
+- **`getKnownForMovies( [лимит] )` / `getKnownForTvShows( [лимит] )`**
+  - 🤔 **Что делает:** Аналогично `getKnownForWorks`, но возвращает только **фильмы** или только **сериалы** соответственно. Лимит по умолчанию **10**.
+  - ✅ **Что вернет:** Массив `Movie` или `TVShow`.
+
+**Что такое `appendToResponse` (Дополнительные детали)?**
+
+Когда просишь детали (`getMovieDetails` или `getTVShowDetails`), можно добавить волшебное слово `appendToResponse` и перечислить, что еще хочешь узнать сразу:
+
+- `'credits'`: Кто снимался (актеры `cast`) и кто делал (команда `crew`).
+- `'videos'`: Ссылки на трейлеры и другие видео.
+- `'images'`: Больше картинок (постеры, фоны, логотипы).
+- `'keywords'`: Ключевые слова (`keywords`).
+- `'recommendations'`: Что еще похожего посмотреть (рекомендации).
+- `'similar'`: Похожие фильмы/сериалы.
+- `'reviews'`: Что пишут зрители.
+- `'external_ids'`: ID на других сайтах (IMDb, Wikidata...).
+- `'watch/providers'`: Где можно легально посмотреть онлайн (если известно).
+- ... и некоторые другие.
+
+Пример запроса с доп. деталями:
+
+```javascript
+client.media
+  .getMovieDetails(550, {
+    language: "ru",
+    appendToResponse: ["credits", "videos", "images"],
+  })
+  .then((movie) => {
+    console.log("Актеры:", movie.credits.cast);
+    console.log("Видео:", movie.videos.results);
+    console.log("Картинки:", movie.images);
+  });
+```
+
+## Пример использования в React
+
+Вот простой пример, как можно загрузить и отобразить информацию о персоне в React-компоненте:
 
 ```jsx
 import React, { useState, useEffect } from "react";
-import { createTMDBProxyClient, ApiError, Person } from "tmdb-xhzloba";
+import {
+  createTMDBProxyClient,
+  Person,
+  Movie,
+  TVShow,
+  ApiError,
+  ImageConfig,
+} from "tmdb-xhzloba";
 
-// Инициализируем клиент один раз
-const apiClient = createTMDBProxyClient("ВАШ_API_КЛЮЧ");
+// Замени на свой ключ!
+const MY_API_KEY = "СЮДА_ВСТАВЬ_СВОЙ_API_КЛЮЧ";
+const client = createTMDBProxyClient(MY_API_KEY);
 
-function PersonDetails() {
+interface PersonProfileProps {
+  personId: number;
+}
+
+const PersonProfile: React.FC<PersonProfileProps> = ({ personId }) => {
   const [person, setPerson] = (useState < Person) | (null > null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState < boolean > true;
   const [error, setError] = (useState < string) | (null > null);
 
   useEffect(() => {
-    const fetchPersonDetails = async () => {
+    const fetchPerson = async () => {
       setLoading(true);
       setError(null);
       try {
-        const person = await apiClient.person.getPersonDetails(2524, {
-          language: "ru",
+        // Запрашиваем детали с фильмографией
+        const personDetails = await client.person.getPersonDetails(personId, {
           appendToResponse: ["combined_credits"],
+          language: "ru", // Опционально: запросить на русском
         });
-        setPerson(person);
+        setPerson(personDetails);
       } catch (err) {
-        console.error("Ошибка загрузки информации о персоне:", err);
         if (err instanceof ApiError) {
-          setError(
-            `Ошибка API (${err.statusCode}): ${err.apiMessage || err.message}`
-          );
+          setError(`Ошибка API (${err.statusCode}): ${err.message}`);
         } else if (err instanceof Error) {
-          setError(`Произошла ошибка: ${err.message}`);
+          setError(`Ошибка: ${err.message}`);
         } else {
           setError("Произошла неизвестная ошибка");
         }
-      } finally {
-        setLoading(false);
+        console.error("Ошибка загрузки персоны:", err);
       }
+      setLoading(false);
     };
 
-    fetchPersonDetails();
-  }, []); // Пустой массив зависимостей означает, что эффект выполнится один раз при монтировании
+    fetchPerson();
+  }, [personId]); // Перезагружаем при смене ID
 
-  if (loading) {
-    return <div>Загрузка...</div>;
-  }
+  if (loading) return <p>Загрузка...</p>;
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
+  if (!person) return <p>Данные не найдены.</p>;
 
-  if (error) {
-    return <div>Ошибка: {error}</div>;
+  // Используем методы класса Person для отображения,
+  // сохраняя результаты в константы для читаемости
+  const profileImageUrl = person.getProfileUrl("w185");
+  const knownForWorks = person.getKnownForWorks(5); // 5 самых известных работ
+  const voicedWorks = person.getVoicedWorks();
+  const knownMovies = person.getKnownForMovies(); // Лимит по умолчанию 10
+  const knownTvShows = person.getKnownForTvShows(); // Лимит по умолчанию 10
+
+  // Получаем доступные размеры постеров для демонстрации
+  const availablePosterSizes = ImageConfig.getAvailablePosterSizes();
+  {
+    /* ImageConfig.getAvailablePosterSizes() возвращает массив строк.
+            Это может быть полезно, чтобы динамически выбирать или предлагать 
+            пользователю доступные размеры изображений в интерфейсе. */
   }
 
   return (
     <div>
-      <h1>Информация о персоне</h1>
-      {person && (
-        <>
-          <p>
-            <strong>Имя:</strong> {person.name}
-          </p>
-          <p>
-            <strong>Биография:</strong> {person.biography}
-          </p>
-          <p>
-            <strong>Известен по:</strong> {person.knownForDepartment}
-          </p>
-          <p>
-            <strong>Ссылка на фото:</strong>{" "}
-            <img
-              src={person.getProfileUrl("w185")}
-              alt={person.name}
-              style={{ width: "100px" }}
-            />
-          </p>
-          {person.castCredits.length > 0 && (
-            <>
-              <h2>Некоторые роли:</h2>
-              <ul>
-                {person.castCredits.slice(0, 5).map((credit) => (
-                  <li key={credit.creditId}>
-                    {credit.character} -{" "}
-                    {credit.media instanceof Movie
-                      ? credit.media.title
-                      : credit.media.name}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-          {person.crewCredits.length > 0 && (
-            <>
-              <h2>Некоторые работы в команде:</h2>
-              <ul>
-                {person.crewCredits
-                  .filter((c) => c.department === "Production")
-                  .slice(0, 3)
-                  .map((credit) => (
-                    <li key={credit.creditId}>
-                      {credit.job} -{" "}
-                      {credit.media instanceof Movie
-                        ? credit.media.title
-                        : credit.media.name}
-                    </li>
-                  ))}
-              </ul>
-            </>
-          )}
-        </>
+      <h1>{person.name}</h1>
+      {profileImageUrl && (
+        <img
+          src={profileImageUrl}
+          alt={person.name}
+          style={{ width: "185px", float: "left", marginRight: "15px" }}
+        />
       )}
+      <p>{person.biography || "Биография отсутствует."}</p>
+      <div style={{ clear: "both" }}></div>
+
+      <h2>Наиболее известен(на) по:</h2>
+      {knownForWorks.length > 0 ? (
+        <ul>
+          {knownForWorks.map((work) => (
+            <li key={work.id}>
+              {work instanceof Movie ? work.title : work.name} (
+              {work instanceof Movie ? "Фильм" : "Сериал"})
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>Нет данных.</p>
+      )}
+
+      <h2>Работы в озвучке:</h2>
+      {voicedWorks.length > 0 ? (
+        <ul>
+          {voicedWorks.map((work) => (
+            <li key={`voiced-${work.id}`}>
+              {work instanceof Movie ? work.title : work.name} (
+              {work instanceof Movie ? "Фильм" : "Сериал"})
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>Нет данных об озвучке.</p>
+      )}
+
+      <h2>Известные фильмы ({knownMovies.length}):</h2>
+      {knownMovies.length > 0 ? (
+        <ul>
+          {knownMovies.map((movie) => {
+            const year = movie.releaseDate?.substring(0, 4) || "N/A";
+            const posterUrl = movie.getPosterUrl("w92");
+            return (
+              <li
+                key={`movie-${movie.id}`}
+                style={{ marginBottom: "10px", listStyle: "none" }}
+              >
+                {posterUrl && (
+                  <img
+                    src={posterUrl}
+                    alt={`Постер ${movie.title}`}
+                    width="60" // Немного меньше для компактности
+                    style={{ verticalAlign: "middle", marginRight: "10px" }}
+                  />
+                )}
+                {movie.title} ({year})
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p>Нет данных.</p>
+      )}
+
+      <h2>Известные сериалы ({knownTvShows.length}):</h2>
+      {knownTvShows.length > 0 ? (
+        <ul>
+          {knownTvShows.map((tvShow) => (
+            <li key={`tv-${tvShow.id}`}>{tvShow.name}</li>
+          ))}
+        </ul>
+      ) : (
+        <p>Нет данных.</p>
+      )}
+
+      {/* Демонстрация ImageConfig */}
     </div>
   );
-}
+};
 
-export default PersonDetails;
+export default PersonProfile;
 ```
-
-**Пояснения к примеру:**
-
-1.  **Инициализация Клиента:** `createTMDBProxyClient`
 
 ## Картинки (`ImageConfig`)
 
@@ -652,30 +760,43 @@ console.error("  Непонятная ошибка:", error);
 
 Если ты используешь TypeScript, библиотека экспортирует все нужные типы (например, `Movie`, `TVShow`, `Genre`, `CastMember`), чтобы твой код был еще надежнее.
 
-+## ⚠️ Важно: Как Работать с `Movie | TVShow`?
+## ⚠️ Важно: Как Работать с `Movie | TVShow`?
 
-- +Некоторые методы (`getPopular`, `getLatest`, `getNowPlaying`) и свойства (`PersonCastCreditItem.media`, `PersonCrewCreditItem.media`) возвращают или содержат значение, которое может быть **либо** фильмом (`Movie`), **либо** сериалом (`TVShow`). В TypeScript это называется объединенным типом (`Movie | TVShow`).
-- +**Почему это важно?**
-- +_ У `Movie` есть свойство `title` (название) и `releaseDate` (дата выхода). +_ У `TVShow` есть свойство `name` (название) и `firstAirDate` (дата первого показа).
-- +Если вы попытаетесь напрямую обратиться к `item.title` или `item.name` у переменной типа `Movie | TVShow`, TypeScript выдаст ошибку, так как он не знает _заранее_, какой именно тип там будет во время выполнения.
-- +**Как правильно получить доступ к уникальным полям?**
-- +Используйте **проверку типа** с помощью оператора `instanceof`:
-- +**Вариант 1: `if/else`**
-- +```javascript
-  +if (item instanceof Movie) {
-- // Здесь TypeScript знает, что item - это Movie
-- console.log(`Фильм: ${item.title} (${item.releaseDate?.substring(0, 4)})`);
-  +} else if (item instanceof TVShow) {
-- // Здесь TypeScript знает, что item - это TVShow
-- console.log(`Сериал: ${item.name} (${item.firstAirDate?.substring(0, 4)})`);
-  +}
-  +```
-- +**Вариант 2: Тернарный оператор**
-- +```javascript
-  +const displayName = item instanceof Movie ? item.title : item.name;
-  +const displayDate = item instanceof Movie ? item.releaseDate : item.firstAirDate;
-  +const displayYear = displayDate?.substring(0, 4) || 'N/A';
-- +console.log(`${displayName} (${displayYear})`);
-  +```
-- +**Чего следует избегать:**
-- +Не используйте утверждение типа `as Movie` или `as TVShow` (`(item as Movie).title`), чтобы "заставить" компилятор замолчать. Это **небезопасно**, так как отключает проверку типов и может привести к ошибкам во время выполнения, если тип окажется не тем, который вы ожидали. Используйте `instanceof` для надежной проверки.
+Некоторые методы (`getPopular`, `getLatest`, `getNowPlaying`) и свойства (`PersonCastCreditItem.media`, `PersonCrewCreditItem.media`) возвращают или содержат значение, которое может быть **либо** фильмом (`Movie`), **либо** сериалом (`TVShow`). В TypeScript это называется объединенным типом (`Movie | TVShow`).
+
+**Почему это важно?**
+
+_ У `Movie` есть свойство `title` (название) и `releaseDate` (дата выхода).
+_ У `TVShow` есть свойство `name` (название) и `firstAirDate` (дата первого показа).
+
+Если вы попытаетесь напрямую обратиться к `item.title` или `item.name` у переменной типа `Movie | TVShow`, TypeScript выдаст ошибку, так как он не знает _заранее_, какой именно тип там будет во время выполнения.
+
+**Как правильно получить доступ к уникальным полям?**
+
+Используйте **проверку типа** с помощью оператора `instanceof`:
+
+**Вариант 1: `if/else`**
+
+```javascript
+if (item instanceof Movie) {
+  // Здесь TypeScript знает, что item - это Movie
+  console.log(`Фильм: ${item.title} (${item.releaseDate?.substring(0, 4)})`);
+} else if (item instanceof TVShow) {
+  // Здесь TypeScript знает, что item - это TVShow
+  console.log(`Сериал: ${item.name} (${item.firstAirDate?.substring(0, 4)})`);
+}
+```
+
+**Вариант 2: Тернарный оператор**
+
+```javascript
+const displayName = item instanceof Movie ? item.title : item.name;
+const displayDate =
+  item instanceof Movie ? item.releaseDate : item.firstAirDate;
+const displayYear = displayDate?.substring(0, 4) || "N/A";
+console.log(`${displayName} (${displayYear})`);
+```
+
+**Чего следует избегать:**
+
+Не используйте утверждение типа `as Movie` или `as TVShow` (`(item as Movie).title`), чтобы "заставить" компилятор замолчать. Это **небезопасно**, так как отключает проверку типов и может привести к ошибкам во время выполнения, если тип окажется не тем, который вы ожидали. Используйте `instanceof` для надежной проверки.

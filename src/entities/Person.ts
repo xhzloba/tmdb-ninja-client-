@@ -1,6 +1,8 @@
 import { ImageConfig } from "../config";
 import { PersonDetailsResponse } from "../types";
 import { PersonCastCreditItem, PersonCrewCreditItem } from "./PersonCreditItem";
+import { Movie } from "./Movie";
+import { TVShow } from "./TVShow";
 
 /**
  * Представляет детальную информацию о персоне (актере, члене команды и т.д.).
@@ -133,6 +135,117 @@ export class Person {
    */
   getCrewWorksByJob(job: string): ReadonlyArray<PersonCrewCreditItem> {
     return this.#crewCredits.filter((credit) => credit.job === job);
+  }
+
+  /**
+   * Возвращает все фильмы, в которых персона снималась (из castCredits).
+   * Требует, чтобы данные были загружены с appendToResponse: ['combined_credits'].
+   * @returns Массив экземпляров Movie.
+   */
+  getMoviesActedIn(): Movie[] {
+    return this.#castCredits
+      .map((credit) => credit.movie)
+      .filter((movie): movie is Movie => movie !== null);
+  }
+
+  /**
+   * Возвращает все сериалы, в которых персона снималась (из castCredits).
+   * Требует, чтобы данные были загружены с appendToResponse: ['combined_credits'].
+   * @returns Массив экземпляров TVShow.
+   */
+  getTvShowsActedIn(): TVShow[] {
+    return this.#castCredits
+      .map((credit) => credit.tvShow)
+      .filter((tvShow): tvShow is TVShow => tvShow !== null);
+  }
+
+  /**
+   * Возвращает список самых известных фильмов, где персона снималась (на основе порядка castCredits от API).
+   * Требует, чтобы данные были загружены с appendToResponse: ['combined_credits'].
+   * @param limit - Максимальное количество возвращаемых фильмов.
+   * @returns Массив экземпляров Movie.
+   */
+  getKnownForMovies(limit: number = 10): Movie[] {
+    return this.getMoviesActedIn().slice(0, limit);
+  }
+
+  /**
+   * Возвращает список самых известных сериалов, где персона снималась (на основе порядка castCredits от API).
+   * Требует, чтобы данные были загружены с appendToResponse: ['combined_credits'].
+   * @param limit - Максимальное количество возвращаемых сериалов.
+   * @returns Массив экземпляров TVShow.
+   */
+  getKnownForTvShows(limit: number = 10): TVShow[] {
+    return this.getTvShowsActedIn().slice(0, limit);
+  }
+
+  /**
+   * Возвращает список самых известных работ персоны (фильмы или сериалы)
+   * на основе её основного департамента (knownForDepartment) и порядка кредитов от API.
+   * Требует, чтобы данные были загружены с appendToResponse: ['combined_credits'].
+   * @param limit - Максимальное количество возвращаемых работ.
+   * @returns Массив экземпляров Movie или TVShow.
+   */
+  getKnownForWorks(limit: number = 10): (Movie | TVShow)[] {
+    let relevantCredits: (PersonCastCreditItem | PersonCrewCreditItem)[] = [];
+
+    // API обычно возвращает combined_credits уже отсортированными по популярности
+    if (this.knownForDepartment === "Acting" && this.#castCredits.length > 0) {
+      relevantCredits = this.#castCredits;
+    } else if (this.#crewCredits.length > 0) {
+      // Если не актер, или ролей нет, берем работы из команды,
+      // отфильтрованные по основному департаменту (если он есть)
+      const crewFiltered = this.knownForDepartment
+        ? this.#crewCredits.filter(
+            (c) => c.department === this.knownForDepartment
+          )
+        : this.#crewCredits;
+      relevantCredits =
+        crewFiltered.length > 0 ? crewFiltered : this.#crewCredits; // Если по департаменту пусто, берем все crew кредиты
+    } else {
+      // Если нет ни cast, ни crew кредитов, возвращаем пустой массив
+      return [];
+    }
+
+    // Берем первые N кредитов и извлекаем из них медиа
+    return relevantCredits
+      .slice(0, limit)
+      .map((credit) => credit.media)
+      .filter(Boolean) as (Movie | TVShow)[];
+  }
+
+  /**
+   * Возвращает список работ (фильмов или сериалов), где персона участвовала в озвучке.
+   * Ищет в crewCredits должности, связанные с озвучкой ('Voice', 'Dubbing', 'Voice Actor', etc.).
+   * Требует, чтобы данные были загружены с appendToResponse: ['combined_credits'].
+   * @returns Массив экземпляров Movie или TVShow.
+   */
+  getVoicedWorks(): (Movie | TVShow)[] {
+    const voiceJobsRegex = /voice|dubbing|voiceover|voice actor/i; // Регистронезависимый поиск для crew
+    const voiceCharacterRegex = /\(voice\)|\(voice over\)/i; // Регистронезависимый поиск для cast (в имени персонажа)
+
+    // Ищем в crewCredits
+    const voicedCrewWorks = this.#crewCredits
+      .filter((credit) => voiceJobsRegex.test(credit.job))
+      .map((credit) => credit.media)
+      .filter((media): media is Movie | TVShow => media !== null);
+
+    // Ищем в castCredits
+    const voicedCastWorks = this.#castCredits
+      .filter((credit) => voiceCharacterRegex.test(credit.character))
+      .map((credit) => credit.media)
+      .filter((media): media is Movie | TVShow => media !== null);
+
+    // Объединяем и удаляем дубликаты по ID медиа
+    const allVoicedWorks = [...voicedCrewWorks, ...voicedCastWorks];
+    const uniqueWorksMap = new Map<number, Movie | TVShow>();
+    allVoicedWorks.forEach((work) => {
+      if (work && !uniqueWorksMap.has(work.id)) {
+        uniqueWorksMap.set(work.id, work);
+      }
+    });
+
+    return Array.from(uniqueWorksMap.values());
   }
 
   // --- Методы --- //

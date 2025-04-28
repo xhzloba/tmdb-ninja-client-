@@ -2,7 +2,6 @@
   "compilerOptions": {
     "target": "ES2017" /* Установить целевую версию ECMAScript */,
     "module": "esnext" /* Указать систему модулей (ES Modules для Rollup) */,
-    "outDir": "./dist_test" /* Папка для скомпилированных файлов теста */,
     "sourceMap": true /* Для sourcemaps в Rollup */,
     "strict": true /* Включить все строгие проверки типов */,
     "esModuleInterop": true /* Позволяет использовать default импорты для commonjs модулей */,
@@ -16,9 +15,8 @@
     ] /* Добавляем DOM типы, т.к. fetch используется */
   },
   "include": [
-    "src/**/*",
-    "test-client.ts"
-  ] /* Какие файлы включать в компиляцию */,
+    "src/**/*"
+  ] /* Какие файлы включать в компиляцию (только src для основной сборки) */,
   "exclude": [
     "node_modules",
     "dist",

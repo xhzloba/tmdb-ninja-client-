@@ -391,9 +391,9 @@ async function runTest() {
 
     // --- ШАГ 5: Тестирование PersonDetails ---
     console.log(
-      "\n5. Тестируем client.person.getPersonDetails(id: 2524 - Tom Hardy) с кредитами..."
+      "\n5. Тестируем client.person.getPersonDetails(id: 12835 - Vin Diesel) с кредитами..."
     );
-    const personId = 2524;
+    const personId = 12835;
     const personDetails = await client.person.getPersonDetails(personId, {
       language: "ru",
       appendToResponse: ["combined_credits"],
@@ -469,6 +469,53 @@ async function runTest() {
           firstCrewCredit.media instanceof Movie ? "Movie" : "TVShow"
         }`
       );
+    }
+
+    // --- Проверка новых методов --- //
+    console.log("    --- Проверка новых методов Person ---");
+    const actedInMovies = personDetails.getMoviesActedIn();
+    const actedInTvShows = personDetails.getTvShowsActedIn();
+    const knownFor = personDetails.getKnownForWorks();
+
+    console.log(`    (Метод) Снялся в фильмах: ${actedInMovies.length}`);
+    if (actedInMovies.length > 0) {
+      console.log(
+        `      ---> Первые 3: ${actedInMovies
+          .slice(0, 3)
+          .map((m) => m.title)
+          .join(", ")}`
+      );
+    }
+    console.log(`    (Метод) Снялся в сериалах: ${actedInTvShows.length}`);
+    if (actedInTvShows.length > 0) {
+      console.log(
+        `      ---> Первые 3: ${actedInTvShows
+          .slice(0, 3)
+          .map((s) => s.name)
+          .join(", ")}`
+      );
+    }
+    console.log(`    (Метод) Известен по работам (${knownFor.length}):`);
+    knownFor.forEach((work) => {
+      console.log(
+        `      ---> ${work instanceof Movie ? work.title : work.name} (${
+          work instanceof Movie ? "Фильм" : "Сериал"
+        })`
+      );
+    });
+    console.log("    -------------------------------------");
+
+    // --- ШАГ 6: Тестирование getVoicedWorks --- //
+    console.log(`\n6. Тестируем getVoicedWorks() для ${personDetails.name}...`);
+    const voicedWorks = personDetails.getVoicedWorks();
+    console.log(`  Найдено работ в озвучке: ${voicedWorks.length}`);
+    if (voicedWorks.length > 0) {
+      console.log("    ---> Первые 5 работ (если есть):");
+      voicedWorks.slice(0, 5).forEach((work) => {
+        const title = work instanceof Movie ? work.title : work.name;
+        const type = work instanceof Movie ? "Фильм" : "Сериал";
+        console.log(`      - ${title} (${type})`);
+      });
     }
 
     console.log("\nТесты успешно завершены!");
