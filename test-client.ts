@@ -1,6 +1,7 @@
 // test-client.ts (упрощенный для проверки импорта)
 // Запуск: ts-node test-client.ts (из корневой папки проекта)
 
+// Восстанавливаем импорты
 import {
   createTMDBProxyClient,
   ApiClient,
@@ -13,20 +14,20 @@ import {
   PaginatedMediaResult,
   PaginatedMovieResult,
   PaginatedTVShowResult,
+  // Типы и классы для персон
+  Person,
+  PersonDetailsOptions,
+  PersonCastCreditItem,
+  PersonCrewCreditItem,
 } from "./src/index";
 
 console.log("---> Импорт из ./src/index прошел успешно!");
 
 const BASE_URL = "https://tmdb.kurwa-bober.ninja/"; // Определяем URL
-const API_KEY = process.env.TMDB_API_KEY;
+const API_KEY = "4ef0d7355d9ffb5151e987764708ce96"; // Хардкодим ключ для теста
 
 // Создаем отдельный ApiClient ТОЛЬКО для теста сырых запросов
 // const rawApiClient = new ApiClient(BASE_URL, API_KEY); // Пока закомментируем или исправим позже, если нужен
-
-if (!API_KEY) {
-  console.error("Необходимо установить переменную окружения TMDB_API_KEY");
-  process.exit(1);
-}
 
 // Инициализация клиента (только после проверки API_KEY)
 const client = createTMDBProxyClient(BASE_URL, API_KEY!);
@@ -387,6 +388,88 @@ async function runTest() {
           .join(", ") || "N/A"
       }`
     );
+
+    // --- ШАГ 5: Тестирование PersonDetails ---
+    console.log(
+      "\n5. Тестируем client.person.getPersonDetails(id: 2524 - Tom Hardy) с кредитами..."
+    );
+    const personId = 2524;
+    const personDetails = await client.person.getPersonDetails(personId, {
+      language: "ru",
+      appendToResponse: ["combined_credits"],
+    });
+
+    console.log(
+      `  Успешно! Получены детали персоны: ${personDetails.name} (ID: ${personDetails.id})`
+    );
+    console.log("  ---> Структура ОБРАБОТАННОГО экземпляра Person:");
+    console.dir(personDetails, { depth: null }); // Выводим весь объект
+
+    // Проверки основных полей
+    console.log("    --- Детальный разбор полей personDetails ---");
+    console.log(`    ID: ${personDetails.id}`);
+    console.log(`    Имя: ${personDetails.name}`);
+    console.log(`    Adult: ${personDetails.adult}`);
+    console.log(
+      `    Также известен как: ${personDetails.alsoKnownAs.join(", ")}`
+    );
+    console.log(
+      `    Биография (начало): ${personDetails.biography?.substring(0, 150)}...`
+    );
+    console.log(`    День рождения: ${personDetails.birthday || "N/A"}`);
+    console.log(`    День смерти: ${personDetails.deathday || "N/A"}`);
+    console.log(`    Пол (1:Ж, 2:М): ${personDetails.gender}`);
+    console.log(`    Homepage: ${personDetails.homepage || "N/A"}`);
+    console.log(`    IMDb ID: ${personDetails.imdbId || "N/A"}`);
+    console.log(
+      `    Известен по департаменту: ${personDetails.knownForDepartment}`
+    );
+    console.log(`    Место рождения: ${personDetails.placeOfBirth || "N/A"}`);
+    console.log(`    Популярность: ${personDetails.popularity}`);
+    console.log(`    Путь к фото профиля: ${personDetails.profilePath}`);
+    console.log(`    URL фото (w185): ${personDetails.getProfileUrl("w185")}`);
+    console.log("    --------------------------------------------");
+
+    // Проверки кредитов (если есть)
+    console.log(
+      `    (Проверка) Количество ролей (cast): ${personDetails.castCredits.length}`
+    );
+    if (personDetails.castCredits.length > 0) {
+      const firstCastCredit = personDetails.castCredits[0];
+      console.log(
+        `      ---> Первая роль: ${firstCastCredit.character} в ${
+          firstCastCredit.media instanceof Movie
+            ? firstCastCredit.media.title
+            : firstCastCredit.media.name
+        }`
+      );
+      console.log(
+        `           Медиа ID: ${firstCastCredit.media.id}, Тип: ${
+          firstCastCredit.media instanceof Movie ? "Movie" : "TVShow"
+        }`
+      );
+    }
+
+    console.log(
+      `    (Проверка) Количество работ (crew): ${personDetails.crewCredits.length}`
+    );
+    if (personDetails.crewCredits.length > 0) {
+      const firstCrewCredit = personDetails.crewCredits[0];
+      console.log(
+        `      ---> Первая работа: ${firstCrewCredit.job} (${
+          firstCrewCredit.department
+        }) в ${
+          firstCrewCredit.media instanceof Movie
+            ? firstCrewCredit.media.title
+            : firstCrewCredit.media.name
+        }`
+      );
+      console.log(
+        `           Медиа ID: ${firstCrewCredit.media.id}, Тип: ${
+          firstCrewCredit.media instanceof Movie ? "Movie" : "TVShow"
+        }`
+      );
+    }
 
     console.log("\nТесты успешно завершены!");
   } catch (error) {

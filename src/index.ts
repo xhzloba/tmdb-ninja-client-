@@ -3,6 +3,7 @@
 // Импорты для использования внутри createNinjaClient
 import { ApiClient } from "./core/ApiClient";
 import { MediaService } from "./services/MediaService";
+import { PersonService } from "./services/PersonService";
 
 // Экспортируем классы конфигурации
 export { ImageConfig } from "./config";
@@ -12,6 +13,11 @@ export { ApiClient } from "./core/ApiClient";
 export { MediaItem } from "./entities/MediaItem";
 export { Movie } from "./entities/Movie";
 export { TVShow } from "./entities/TVShow";
+export { Person } from "./entities/Person";
+export {
+  PersonCastCreditItem,
+  PersonCrewCreditItem,
+} from "./entities/PersonCreditItem";
 
 // Экспортируем типы пагинации и опций из сервиса
 export type {
@@ -20,6 +26,7 @@ export type {
   PaginatedTVShowResult,
   MediaDetailsOptions,
 } from "./services/MediaService";
+export type { PersonDetailsOptions } from "./services/PersonService";
 
 // Экспортируем типы сущностей и деталей из types
 export type {
@@ -38,6 +45,16 @@ export type {
   Season,
   ContentRating,
   ContentRatingsResponse,
+} from "./types";
+
+// Экспортируем типы для персон из types
+export type {
+  PersonDetailsResponse,
+  PersonCombinedCreditsResponse,
+  PersonCastCreditMovieResponse,
+  PersonCastCreditTVResponse,
+  PersonCrewCreditMovieResponse,
+  PersonCrewCreditTVResponse,
 } from "./types";
 
 // Экспортируем класс ошибки
@@ -79,11 +96,17 @@ export function createTMDBProxyClient(
     "color: #219ebc; text-decoration: underline; font-weight: bold;" // Стиль для ссылки
   );
 
+  const personService = new PersonService(apiClient);
+
   return {
     /**
      * Сервис для работы с фильмами и сериалами.
      */
     media: new MediaService(apiClient),
+    /**
+     * Сервис для работы с данными персон.
+     */
+    person: personService,
     // Комментарий для "себя": Сюда можно добавить другие сервисы,
     // если библиотека будет расширяться (например, auth, genres и т.д.).
     // genres: new GenreService(apiClient),
