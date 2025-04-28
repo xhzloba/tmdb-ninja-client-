@@ -228,6 +228,15 @@ client.media
   - ```typescript
     const writers = movie.getCrewByDepartment("Writing");
     ```
+- `getFormattedVoteCount()`: Форматирует `voteCount`. До 1000 - точное число, 1000+ - с суффиксом 'K' (1K, 1.1K). Возвращает строку или `null`.
+  - ```typescript
+    // Если voteCount = 998
+    const votes1 = mediaItem.getFormattedVoteCount(); // => "998"
+    // Если voteCount = 1234
+    const votes2 = mediaItem.getFormattedVoteCount(); // => "1.2K"
+    // Если voteCount = 5000
+    const votes3 = mediaItem.getFormattedVoteCount(); // => "5K"
+    ```
 
 **Поля и Методы `Movie`:**
 

@@ -246,6 +246,35 @@ export abstract class MediaItem {
   }
 
   /**
+   * Форматирует количество голосов для читаемого отображения.
+   * До 1000 возвращает точное число.
+   * 1000 и выше - сокращает с суффиксом 'K' (1K, 1.1K, 2K, 10.5K и т.д.).
+   * @returns Отформатированная строка или null, если voteCount не определен или отрицательный.
+   */
+  getFormattedVoteCount(): string | null {
+    const count = this.voteCount;
+
+    if (count === null || count === undefined || count < 0) {
+      return null; // Или можно вернуть 'N/A' или '-'
+    }
+    if (count === 0) {
+      return "0";
+    }
+    if (count < 1000) {
+      return count.toString();
+    }
+
+    const thousands = count / 1000;
+    // Проверяем, целое ли число тысяч (чтобы не писать 1.0K)
+    if (thousands % 1 === 0) {
+      return `${thousands}K`;
+    } else {
+      // Оставляем один знак после запятой
+      return `${thousands.toFixed(1)}K`;
+    }
+  }
+
+  /**
    * Формирует полный URL для постера.
    * Использует базовый URL из ImageConfig.
    * @param size - Желаемый размер постера (например, 'w92', 'w154', 'w185', 'w342', 'w500', 'w780', 'original'). По умолчанию 'w500'.
