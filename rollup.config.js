@@ -46,6 +46,7 @@ module.exports = {
       preventAssignment: true,
       values: {
         "process.env.PACKAGE_VERSION": JSON.stringify(pkg.version),
+        "process.env.PACKAGE_HOMEPAGE": JSON.stringify(pkg.homepage || ""),
       },
     }),
     resolve(), // Позволяет Rollup находить модули в node_modules

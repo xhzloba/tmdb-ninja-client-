@@ -5,6 +5,7 @@ import { PersonService } from "./services/PersonService";
 declare var process: {
   env: {
     PACKAGE_VERSION?: string;
+    PACKAGE_HOMEPAGE?: string;
   };
 };
 
@@ -41,19 +42,41 @@ export function createTMDBProxyClient(
 
   const apiClient = new ApiClient(baseURL, apiKey);
 
-  // Выводим сообщение в консоль (если доступен process)
+  // Выводим сообщение в консоль
   try {
-    // Просто выводим версию. Rollup заменит process.env.PACKAGE_VERSION на строку.
-    // В Node.js/сборке это будет версия, в браузере без сборки - undefined (что маловероятно для использования библиотеки)
-    // Но для БАНДЛА (dist/*.js) версия будет встроена.
-    const version = process.env.PACKAGE_VERSION || "dev"; // Оставим || 'dev' на крайний случай, если замена вдруг не пройдет
+    const version = process.env.PACKAGE_VERSION || "dev";
+    const homepage = process.env.PACKAGE_HOMEPAGE || "N/A";
+
+    // Основная информация
     console.log(
-      `%c tmdb-xhzloba %c v${version} %c by xhzloba %c->%c https://www.npmjs.com/package/tmdb-xhzloba`,
+      `%c tmdb-xhzloba %c v${version} %c by xhzloba %c->%c ${homepage}`,
       "background: #023047; color: #ffb703; padding: 3px; border-radius: 3px 0 0 3px; font-weight: bold;",
       "background: #ffb703; color: #023047; padding: 3px; border-radius: 0 3px 3px 0; font-weight: bold;",
       "background: #8ecae6; color: #023047; padding: 3px; border-radius: 3px; margin-left: 5px; font-weight: bold;",
       "color: #fb8500; font-weight: bold; margin-left: 5px;",
       "color: #219ebc; text-decoration: underline; font-weight: bold;"
+    );
+
+    // Дополнительная полезная информация
+    console.log(
+      `%c Base URL: %c${baseURL}`,
+      "color: #fb8500; font-weight: bold;",
+      "color: #023047;"
+    );
+    console.log(
+      `%c Available Services: %c client.media, client.person`,
+      "color: #fb8500; font-weight: bold;",
+      "color: #023047;"
+    );
+    console.log(
+      `%c Quick Start: %c Use await client.media.getPopular() to fetch popular items.`,
+      "color: #219ebc; font-weight: bold;",
+      "color: #023047;"
+    );
+    console.log(
+      `%c Docs: %c See README for details: ${homepage}`,
+      "color: #219ebc; font-weight: bold;",
+      "color: #023047; text-decoration: underline;"
     );
   } catch (e) {
     /* Игнорируем ошибку, если process недоступен */
