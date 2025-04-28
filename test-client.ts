@@ -17,8 +17,9 @@ import {
   // Типы и классы для персон
   Person,
   PersonDetailsOptions,
-  PersonCastCreditItem,
-  PersonCrewCreditItem,
+  // PersonCastCreditItem, // Удалено
+  // PersonCrewCreditItem, // Удалено
+  Collection, // Добавлено
 } from "./src/index";
 
 console.log("---> Импорт из ./src/index прошел успешно!");
@@ -539,4 +540,43 @@ async function runTest() {
   }
 }
 
+async function testCollection() {
+  const collectionIdToTest = 119; // ID коллекции "Властелин колец"
+  console.log(
+    `\n--- Testing getCollectionDetails for ID: ${collectionIdToTest} ---`
+  );
+
+  try {
+    const collection = await client.media.getCollectionDetails(
+      collectionIdToTest
+    );
+
+    if (collection instanceof Collection) {
+      console.log(`Collection Name: ${collection.name}`);
+      console.log(`Overview: ${collection.overview?.substring(0, 100)}...`); // Показать часть описания
+      console.log(`Number of parts: ${collection.parts.length}`);
+      if (collection.parts.length > 0) {
+        console.log(
+          `First part: ${
+            collection.parts[0].title
+          } (${collection.parts[0].releaseDate?.substring(0, 4)})`
+        );
+      }
+      console.log("✅ Test Passed!");
+    } else {
+      console.error("❌ Test Failed: Unexpected response type.");
+      console.log("Received:", collection);
+    }
+  } catch (error) {
+    console.error("❌ Test Failed with error:");
+    if (error instanceof ApiError) {
+      console.error(`  Status: ${error.statusCode}`);
+      console.error(`  Message: ${error.apiMessage || error.message}`);
+    } else {
+      console.error("  Generic Error:", error);
+    }
+  }
+}
+
 runTest();
+testCollection();
