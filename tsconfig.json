@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2017" /* Установить целевую версию ECMAScript */,
-    "module": "CommonJS" /* Указать систему модулей (CommonJS для запуска тестов через node) */,
+    "module": "esnext" /* Указать систему модулей (ES Modules для Rollup) */,
     "outDir": "./dist_test" /* Папка для скомпилированных файлов теста */,
     "sourceMap": true /* Для sourcemaps в Rollup */,
     "strict": true /* Включить все строгие проверки типов */,
