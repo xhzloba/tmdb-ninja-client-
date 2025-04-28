@@ -43,25 +43,18 @@ export function createTMDBProxyClient(
 
   // Выводим сообщение в консоль (если доступен process)
   try {
-    if (typeof process !== "undefined" && process?.env?.PACKAGE_VERSION) {
-      console.log(
-        `%c tmdb-xhzloba %c v${process.env.PACKAGE_VERSION} %c by xhzloba %c->%c https://www.npmjs.com/package/tmdb-xhzloba`,
-        "background: #023047; color: #ffb703; padding: 3px; border-radius: 3px 0 0 3px; font-weight: bold;",
-        "background: #ffb703; color: #023047; padding: 3px; border-radius: 0 3px 3px 0; font-weight: bold;",
-        "background: #8ecae6; color: #023047; padding: 3px; border-radius: 3px; margin-left: 5px; font-weight: bold;",
-        "color: #fb8500; font-weight: bold; margin-left: 5px;",
-        "color: #219ebc; text-decoration: underline; font-weight: bold;"
-      );
-    } else {
-      console.log(
-        `%c tmdb-xhzloba %c vdev %c by xhzloba %c->%c https://www.npmjs.com/package/tmdb-xhzloba`,
-        "background: #023047; color: #ffb703; padding: 3px; border-radius: 3px 0 0 3px; font-weight: bold;",
-        "background: #ffb703; color: #023047; padding: 3px; border-radius: 0 3px 3px 0; font-weight: bold;",
-        "background: #8ecae6; color: #023047; padding: 3px; border-radius: 3px; margin-left: 5px; font-weight: bold;",
-        "color: #fb8500; font-weight: bold; margin-left: 5px;",
-        "color: #219ebc; text-decoration: underline; font-weight: bold;"
-      );
-    }
+    // Просто выводим версию. Rollup заменит process.env.PACKAGE_VERSION на строку.
+    // В Node.js/сборке это будет версия, в браузере без сборки - undefined (что маловероятно для использования библиотеки)
+    // Но для БАНДЛА (dist/*.js) версия будет встроена.
+    const version = process.env.PACKAGE_VERSION || "dev"; // Оставим || 'dev' на крайний случай, если замена вдруг не пройдет
+    console.log(
+      `%c tmdb-xhzloba %c v${version} %c by xhzloba %c->%c https://www.npmjs.com/package/tmdb-xhzloba`,
+      "background: #023047; color: #ffb703; padding: 3px; border-radius: 3px 0 0 3px; font-weight: bold;",
+      "background: #ffb703; color: #023047; padding: 3px; border-radius: 0 3px 3px 0; font-weight: bold;",
+      "background: #8ecae6; color: #023047; padding: 3px; border-radius: 3px; margin-left: 5px; font-weight: bold;",
+      "color: #fb8500; font-weight: bold; margin-left: 5px;",
+      "color: #219ebc; text-decoration: underline; font-weight: bold;"
+    );
   } catch (e) {
     /* Игнорируем ошибку, если process недоступен */
   }

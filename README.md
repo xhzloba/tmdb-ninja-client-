@@ -1,7 +1,7 @@
-# ✨ xhzloba TMDB Proxy Client - Твой Помощник в Мире Кино!
-
 [![npm version](https://badge.fury.io/js/tmdb-xhzloba.svg)](https://badge.fury.io/js/tmdb-xhzloba)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+
+# ✨ xhzloba TMDB Proxy Client - Твой Помощник в Мире Кино!
 
 Типизированная клиентская библиотека на TypeScript для взаимодействия с прокси-API TMDB. Предоставляет классы-сущности (`Movie`, `TVShow`, `Person`), методы для получения списков и деталей с пагинацией, а также утилиты для работы с API.
 
