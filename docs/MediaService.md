@@ -228,14 +228,14 @@ client.media
   - ```typescript
     const writers = movie.getCrewByDepartment("Writing");
     ```
-- `getFormattedVoteCount()`: Форматирует `voteCount`. До 1000 - точное число, 1000+ - с суффиксом 'K' (1K, 1.1K). Возвращает строку или `null`.
+- `getFormattedVoteCount()`: Форматирует `voteCount`. До 1000 - точное число, 1000+ - с суффиксом 'K' (1K, 1.1K). Возвращает строку или `null`. **(Метод базового класса `MediaItem`, доступен у `Movie` и `TVShow`)**
   - ```typescript
-    // Если voteCount = 998
-    const votes1 = mediaItem.getFormattedVoteCount(); // => "998"
-    // Если voteCount = 1234
-    const votes2 = mediaItem.getFormattedVoteCount(); // => "1.2K"
-    // Если voteCount = 5000
-    const votes3 = mediaItem.getFormattedVoteCount(); // => "5K"
+    // Пример для фильма с voteCount = 998
+    const votesMovie1 = movie.getFormattedVoteCount(); // => "998"
+    // Пример для сериала с voteCount = 1234
+    const votesTV1 = tvShow.getFormattedVoteCount(); // => "1.2K"
+    // Пример для фильма с voteCount = 5000
+    const votesMovie2 = movie.getFormattedVoteCount(); // => "5K"
     ```
 
 **Поля и Методы `Movie`:**
