@@ -1,6 +1,6 @@
 {
   "name": "tmdb-xhzloba",
-  "version": "1.0.24",
+  "version": "1.0.25",
   "description": "Типизированная клиентская библиотека на TypeScript для взаимодействия с прокси-API TMDB. Предоставляет классы-сущности (Movie, TVShow), методы для получения списков (Now Playing, Popular) с пагинацией и утилиты для работы с URL изображений.",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -32,12 +32,12 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/xhzloba/apimovies.git"
+    "url": "git+https://github.com/xhzloba/tmdb-ninja-client-.git"
   },
   "bugs": {
-    "url": "https://github.com/xhzloba/apimovies/issues"
+    "url": "https://github.com/xhzloba/tmdb-ninja-client-/issues"
   },
-  "homepage": "https://github.com/xhzloba/apimovies#readme",
+  "homepage": "https://github.com/xhzloba/tmdb-ninja-client-#readme",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.3",

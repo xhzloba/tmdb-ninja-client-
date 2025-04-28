@@ -17,24 +17,24 @@
 
 ## Содержание
 
-- **[Установка и Настройка](https://github.com/xhzloba/apimovies/blob/master/docs/Setup.md)**
+- **[Установка и Настройка](https://github.com/xhzloba/tmdb-ninja-client-/blob/main/docs/Setup.md)**
   - Установка через npm/yarn
   - Инициализация клиента (`createTMDBProxyClient`)
   - Использование с CDN
-- **[Сервис Медиа (`client.media`)](https://github.com/xhzloba/apimovies/blob/master/docs/MediaService.md)**
+- **[Сервис Медиа (`client.media`)](https://github.com/xhzloba/tmdb-ninja-client-/blob/main/docs/MediaService.md)**
   - Получение списков (`getPopular`, `getLatest`, `getNowPlaying`, ...)
   - Поиск (`searchMovies`, `searchTVShows`)
   - Получение деталей (`getMovieDetails`, `getTVShowDetails`)
   - Опция `appendToResponse`
   - Классы `Movie` и `TVShow` (поля и методы)
-- **[Сервис Персон (`client.person`)](https://github.com/xhzloba/apimovies/blob/master/docs/PersonService.md)**
+- **[Сервис Персон (`client.person`)](https://github.com/xhzloba/tmdb-ninja-client-/blob/main/docs/PersonService.md)**
   - Получение деталей (`getPersonDetails`)
   - Класс `Person` (поля и методы, включая фильмографию)
-- **[Утилиты и Дополнительная Информация](https://github.com/xhzloba/apimovies/blob/master/docs/Utilities.md)**
+- **[Утилиты и Дополнительная Информация](https://github.com/xhzloba/tmdb-ninja-client-/blob/main/docs/Utilities.md)**
   - Конфигурация изображений (`ImageConfig`)
   - Обработка ошибок (`ApiError`)
   - Заметки по TypeScript (работа с `Movie | TVShow`)
-- **[Примеры Использования в React](https://github.com/xhzloba/apimovies/blob/master/docs/ReactExamples.md)**
+- **[Примеры Использования в React](https://github.com/xhzloba/tmdb-ninja-client-/blob/main/docs/ReactExamples.md)**
   - Отображение популярных медиа
   - Отображение профиля персоны
 
