@@ -8,6 +8,8 @@ import {
   TVShowMedia,
 } from "../types";
 import { Movie, TVShow } from "../entities";
+import { MediaItem, Collection } from "../entities";
+import { CollectionDetailsResponse } from "../types";
 
 /**
  * Тип возвращаемого значения для методов, возвращающих списки ТОЛЬКО фильмов с пагинацией.
@@ -605,6 +607,32 @@ export class MediaService {
         error
       );
       throw error;
+    }
+  }
+
+  /**
+   * Получает детали коллекции фильмов по её ID.
+   * @param collectionId - ID коллекции.
+   * @param options - Опции запроса (например, язык).
+   * @returns Promise, разрешающийся в объект Collection.
+   * @throws {ApiError} Если запрос к API завершился ошибкой.
+   */
+  async getCollectionDetails(
+    collectionId: number,
+    options?: { language?: string }
+  ): Promise<Collection> {
+    try {
+      const data = await this.#apiClient.get<CollectionDetailsResponse>(
+        `/3/collection/${collectionId}`,
+        options
+      );
+      return new Collection(data);
+    } catch (error) {
+      console.error(
+        `Error fetching collection details for ID ${collectionId}:`,
+        error
+      );
+      throw error; // Перебрасываем ошибку для дальнейшей обработки
     }
   }
 

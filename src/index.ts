@@ -1,139 +1,100 @@
-// src/index.ts
-
-// Импорты для использования внутри createNinjaClient
-import { ApiClient } from "./core/ApiClient";
-import { MediaService } from "./services/MediaService";
-import { PersonService } from "./services/PersonService";
-
-// Экспортируем классы конфигурации
+// --- Основные экспорты --- //
+export { createTMDBProxyClient } from "./client";
+export { ApiClient, ApiError } from "./core/ApiClient";
 export { ImageConfig } from "./config";
 
-// Экспортируем основные классы (ApiClient теперь тоже экспортируется)
-export { ApiClient } from "./core/ApiClient";
-export { MediaItem } from "./entities/MediaItem";
-export { Movie } from "./entities/Movie";
-export { TVShow } from "./entities/TVShow";
-export { Person } from "./entities/Person";
+// --- Экспорт Сущностей --- //
 export {
+  MediaItem,
+  Movie,
+  TVShow,
+  Person,
   PersonCastCreditItem,
   PersonCrewCreditItem,
-} from "./entities/PersonCreditItem";
+  Collection, // Добавлен Collection
+} from "./entities";
 
-// Экспортируем типы пагинации и опций из сервиса
+// --- Экспорт Основных Типов --- //
 export type {
-  PaginatedMediaResult,
-  PaginatedMovieResult,
-  PaginatedTVShowResult,
-  MediaDetailsOptions,
-} from "./services/MediaService";
-export type { PersonDetailsOptions } from "./services/PersonService";
-
-// Экспортируем типы сущностей и деталей из types
-export type {
+  // Основные типы данных
   Genre,
   ProductionCompany,
   ProductionCountry,
   SpokenLanguage,
-  ReleaseDate,
-  CountryReleaseDates,
-  ReleaseDatesResponse,
-  Keyword,
+  // Типы для списков
+  PaginatedResponse,
+  PaginatedMediaResult,
+  PaginatedMovieResult,
+  PaginatedTVShowResult,
+  // Типы для деталей
+  MovieDetailsOptions,
+  TVShowDetailsOptions,
+  PersonDetailsOptions,
+  CollectionDetailsResponse, // Добавлен тип ответа коллекции
+  // Доп. типы для appendToResponse
+  CreditsResponse,
+  CastMember,
+  CrewMember,
+  VideosResponse,
+  Video,
+  ImagesResponse,
+  ImageDetails,
   KeywordsResponse,
-  AlternativeTitle,
-  AlternativeTitlesResponse,
-  Episode,
-  Season,
-  ContentRating,
-  ContentRatingsResponse,
+  Keyword,
+  ExternalIdsResponse,
+  WatchProviderResponse,
+  WatchProviderDetails,
+  // ... можно добавить другие по мере необходимости
 } from "./types";
 
-// Экспортируем типы для персон из types
-export type {
-  PersonDetailsResponse,
-  PersonCombinedCreditsResponse,
-  PersonCastCreditMovieResponse,
-  PersonCastCreditTVResponse,
-  PersonCrewCreditMovieResponse,
-  PersonCrewCreditTVResponse,
-} from "./types";
+/*
+// Пример использования для быстрого старта (можно раскомментировать)
+import { createTMDBProxyClient, ApiError, Movie, TVShow, Person, Collection } from "./index";
 
-// Экспортируем класс ошибки
-export { ApiError } from "./core/ApiClient";
+async function runExample() {
+  const client = createTMDBProxyClient("ВАШ_API_КЛЮЧ");
 
-// --- Фабричная функция для создания клиента ---
-
-const DEFAULT_API_URL = "https://tmdb.kurwa-bober.ninja/";
-
-/**
- * Создает и конфигурирует клиент для взаимодействия с Ninja TMDB API.
- * Это рекомендуемый способ инициализации библиотеки.
- *
- * @param baseURL - Необязательный параметр. Базовый URL API. По умолчанию используется 'https://tmdb.kurwa-bober.ninja/'.
- * @param apiKey - API ключ для доступа к API.
- * @returns Объект, содержащий готовые к использованию сервисы (например, `media`).
- */
-export function createTMDBProxyClient(
-  baseURL: string = DEFAULT_API_URL,
-  apiKey: string
-) {
-  // Комментарий для "себя": Внутреннее создание зависимостей.
-  // Пользователю не нужно знать про ApiClient.
-  // Проверяем, что ключ не пустой
-  if (!apiKey) {
-    throw new Error("API key must be provided to createNinjaClient.");
-  }
-  const apiClient = new ApiClient(baseURL, apiKey);
-
-  // Выводим сообщение в консоль
-  console.log(
-    `%c tmdb-xhzloba %c v${
-      process.env.PACKAGE_VERSION || "dev"
-    } %c by xhzloba %c->%c https://www.npmjs.com/package/tmdb-xhzloba`,
-    "background: #023047; color: #ffb703; padding: 3px; border-radius: 3px 0 0 3px; font-weight: bold;", // Стиль для названия
-    "background: #ffb703; color: #023047; padding: 3px; border-radius: 0 3px 3px 0; font-weight: bold;", // Стиль для версии
-    "background: #8ecae6; color: #023047; padding: 3px; border-radius: 3px; margin-left: 5px; font-weight: bold;", // Стиль для автора
-    "color: #fb8500; font-weight: bold; margin-left: 5px;", // Стиль для стрелочки
-    "color: #219ebc; text-decoration: underline; font-weight: bold;" // Стиль для ссылки
-  );
-
-  const personService = new PersonService(apiClient);
-
-  return {
-    /**
-     * Сервис для работы с фильмами и сериалами.
-     */
-    media: new MediaService(apiClient),
-    /**
-     * Сервис для работы с данными персон.
-     */
-    person: personService,
-    // Комментарий для "себя": Сюда можно добавить другие сервисы,
-    // если библиотека будет расширяться (например, auth, genres и т.д.).
-    // genres: new GenreService(apiClient),
-  };
-}
-
-// Комментарий для "себя": Прямые экспорты ApiClient и MediaService оставлены
-// для продвинутых сценариев или тестирования, но основной путь - createNinjaClient.
-
-/* Пример использования:
-import { createNinjaClient, ImageConfig, ApiError } from 'tmdb-ninja-client';
-
-// Опционально: настроить URL для картинок
-// ImageConfig.setBaseUrl('...');
-
-const client = createNinjaClient(); // Используем URL по умолчанию
-// const client = createNinjaClient('https://my-proxy.com/'); // Указываем свой URL
-
-try {
-    const nowPlayingMovies = await client.media.getNowPlayingMovies();
-    nowPlayingMovies.items.forEach(movie => {
-        console.log(`${movie.title} (${movie.releaseDate})`);
-        console.log(`  Poster: ${movie.getPosterUrl('w342')}`);
+  try {
+    // 1. Получить популярные
+    const popular = await client.media.getPopular();
+    console.log("--- Popular Media ---");
+    popular.items.slice(0, 3).forEach(item => {
+      console.log(`- ${item instanceof Movie ? item.title : item.name} (Rating: ${item.voteAverage.toFixed(1)})`);
     });
-} catch (error) {
+
+    // 2. Получить детали фильма "Бэтмен"
+    const batman = await client.media.getMovieDetails(414906, { appendToResponse: ['credits'] });
+    console.log("\n--- Movie Details ---");
+    console.log(`Title: ${batman.title}`);
+    console.log(`Runtime: ${batman.getFormattedRuntime()}`);
+    console.log(`Directors: ${batman.getDirectors().map(d => d.name).join(', ')}`);
+
+    // 3. Получить детали персоны "Вин Дизель"
+    const vinDiesel = await client.person.getPersonDetails(12835, { appendToResponse: ['combined_credits'] });
+    console.log("\n--- Person Details ---");
+    console.log(`Name: ${vinDiesel.name}`);
+    console.log(`Known For (Acting): ${vinDiesel.getMoviesActedIn().slice(0, 3).map(m => m.title).join(', ')}`);
+    console.log(`Voiced Works (Sample): ${vinDiesel.getVoicedWorks().slice(0, 3).map(w => w instanceof Movie ? w.title : w.name).join(', ')}`);
+
+    // 4. Получить детали коллекции "Расплата"
+    const accountantCollection = await client.media.getCollectionDetails(870339);
+    console.log("\n--- Collection Details ---");
+    console.log(`Collection: ${accountantCollection.name}`);
+    console.log(`Parts (${accountantCollection.parts.length}):`);
+    accountantCollection.parts.forEach(part => {
+      console.log(`  - ${part.title} (${part.releaseDate?.substring(0,4) || 'N/A'})`);
+    });
+
+  } catch (error) {
     if (error instanceof ApiError) {
-        console.error(`API Error: ${error.message}`);
+      console.error(`\n--- API Error ---`);
+      console.error(`Status: ${error.statusCode}`);
+      console.error(`Message: ${error.apiMessage || error.message}`);
+    } else {
+      console.error("\n--- Generic Error ---", error);
     }
+  }
 }
+
+// runExample();
 */

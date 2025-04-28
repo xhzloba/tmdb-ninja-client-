@@ -119,6 +119,7 @@
     ```
 
 - **`client.media.getTVShowDetails( tvShowId, [options] )`**
+
   - Получает детальную информацию о сериале по его `tvShowId`.
   - `options`: `{ language?: string, appendToResponse?: string[] }`.
   - Возвращает: `Promise<TVShow>`.
@@ -127,6 +128,25 @@
     client.media
       .getTVShowDetails(1399, { appendToResponse: ["videos"] })
       .then((tvShow) => console.log(`Сериал: ${tvShow.name}`, tvShow.videos));
+    ```
+
+- **`client.media.getCollectionDetails( collectionId, [options] )`**
+  - Получает детали коллекции фильмов по её `collectionId`.
+  - `options`: `{ language?: string }`. Параметр `appendToResponse` здесь не используется, так как основной запрос коллекции уже включает базовую информацию о её частях (фильмах).
+  - Возвращает: `Promise<Collection>`.
+  - ```typescript
+    // Получить детали коллекции "Расплата" (ID 870339) на русском
+    client.media
+      .getCollectionDetails(870339, { language: "ru" })
+      .then((collection) => {
+        console.log(`Коллекция: ${collection.name}`);
+        console.log(`Количество частей: ${collection.parts.length}`);
+        collection.parts.forEach((movie) => {
+          console.log(
+            ` - ${movie.title} (${movie.releaseDate?.substring(0, 4)})`
+          );
+        });
+      });
     ```
 
 ## Опция `appendToResponse`

@@ -4,3 +4,6 @@
 export * from "./MediaItem";
 export * from "./Movie";
 export * from "./TVShow";
+export * from "./Person";
+export * from "./PersonCreditItem";
+export * from "./Collection";

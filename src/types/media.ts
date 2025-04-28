@@ -452,3 +452,13 @@ export function isMovieMedia(item: MediaItemResponse): item is MovieMedia {
 export function isTVShowMedia(item: MediaItemResponse): item is TVShowMedia {
   return (item as TVShowMedia).name !== undefined;
 }
+
+// --- Тип для ответа API на запрос деталей коллекции --- //
+export interface CollectionDetailsResponse {
+  id: number;
+  name: string;
+  overview: string | null;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  parts: MovieMedia[]; // Коллекция состоит из фильмов
+}
