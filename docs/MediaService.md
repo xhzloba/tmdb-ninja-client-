@@ -99,6 +99,17 @@
 
 - **`client.media.getPopularTVShows( [page] )`**
 
+  - Получает список ТОЛЬКО популярных сериалов (сортировка 'top' в API).
+  - Возвращает: `Promise<PaginatedTVShowResult>` (список `TVShow`).
+  - ```typescript
+    // Получить первую страницу популярных сериалов
+    client.media
+      .getPopularTVShows()
+      .then((data) => console.log("Популярные сериалы:", data.items));
+    // Получить вторую страницу
+    client.media.getPopularTVShows(2).then((data) => console.log(data.items));
+    ```
+
 - **`client.media.getCurrentYearMovies( [page] )`**
 
   - Получает список **новинок** (фильмов, выходящих или вышедших в **текущем** году).
