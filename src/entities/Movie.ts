@@ -211,9 +211,7 @@ export class Movie extends MediaItem {
   }
 
   get tagline(): string | null | undefined {
-    // Переопределяем, если есть только у Movie (если tagline убрали из MediaItem)
-    // Если tagline в MediaItem, эта перегрузка не нужна
-    return super.tagline; // Или this.#tagline, если он только здесь
+    return super.tagline;
   }
 
   /**
@@ -231,13 +229,11 @@ export class Movie extends MediaItem {
       runtime: this.runtime,
       budget: this.budget,
       revenue: this.revenue,
-      // Добавляем результат форматированной даты
+
       _formattedReleaseDate_RU: this.getFormattedReleaseDate("ru-RU"),
-      // Добавляем поле mediaType для легкой идентификации
       _mediaType: "movie",
     };
 
-    // Удаляем ключи со значением undefined
     for (const key in movieJSON) {
       if (movieJSON[key] === undefined) {
         delete movieJSON[key];

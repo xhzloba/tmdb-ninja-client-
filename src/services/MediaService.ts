@@ -88,8 +88,6 @@ export class MediaService {
     if (isTVShowMedia(itemData)) {
       return new TVShow(itemData);
     }
-    // Комментарий для "себя": Логируем, если пришел неизвестный тип.
-    // В идеале, такого быть не должно, если типы API описаны верно.
     console.warn("Unknown media item type received:", itemData);
     return null;
   }
@@ -102,7 +100,6 @@ export class MediaService {
    * @throws {ApiError} В случае ошибки API.
    */
   async getNowPlaying(page: number = 1): Promise<PaginatedMediaResult> {
-    // Комментарий для "себя": Эндпоинт и параметры согласно документации/примерам.
     // Используем базовый путь '/', так как параметры sort/page идут в query.
     const endpoint = ""; // Пустой эндпоинт, т.к. базовый URL уже содержит /
     const params = {
@@ -111,14 +108,10 @@ export class MediaService {
     };
 
     try {
-      // Вызываем приватный метод get из ApiClient
       const response = await this.#apiClient.get<MediaListResponse>(
         endpoint,
         params
       );
-
-      // Комментарий для "себя": Маппим сырые данные в наши классы сущностей,
-      // используя приватный фабричный метод. Фильтруем null значения.
       const items = response.results
         .map(this.#createMediaItem)
         .filter((item): item is Movie | TVShow => item !== null);
@@ -130,10 +123,8 @@ export class MediaService {
         totalResults: response.total_results,
       };
     } catch (error) {
-      // Комментарий для "себя": Ловим и пробрасываем ошибку ApiError выше.
-      // Можно добавить специфичную обработку ошибок сервисного уровня здесь.
       console.error(`Error fetching now playing (page ${page}):`, error);
-      throw error; // Пробрасываем оригинальную ошибку (вероятно, ApiError)
+      throw error;
     }
   }
 
@@ -145,7 +136,6 @@ export class MediaService {
    * @throws {ApiError} В случае ошибки API.
    */
   async getNowPlayingMovies(page: number = 1): Promise<PaginatedMovieResult> {
-    // Комментарий для "себя": Используем параметр cat=movie для фильтрации.
     const endpoint = "";
     const params = {
       cat: "movie",
@@ -159,12 +149,9 @@ export class MediaService {
         params
       );
 
-      // Комментарий для "себя": Так как мы запросили cat=movie,
-      // ожидаем, что все элементы - фильмы. Преобразуем их в Movie.
-      // Добавим проверку isMovieMedia для надежности, хотя она тут избыточна.
       const items = response.results
-        .filter(isMovieMedia) // Убедимся, что это точно фильмы
-        .map((movieData) => new Movie(movieData)); // Создаем экземпляры Movie
+        .filter(isMovieMedia)
+        .map((movieData) => new Movie(movieData));
 
       return {
         items: items,
@@ -198,7 +185,6 @@ export class MediaService {
         endpoint,
         params
       );
-      // Ожидаем только сериалы, фильтруем и маппим
       const items = response.results
         .filter(isTVShowMedia)
         .map((tvData) => new TVShow(tvData));
@@ -226,12 +212,10 @@ export class MediaService {
    * @throws {ApiError} В случае ошибки API.
    */
   async getPopularMovies(page: number = 1): Promise<PaginatedMovieResult> {
-    // Комментарий для "себя": API использует sort=top для этого списка.
-    // Название метода getPopularMovies выбрано для ясности на стороне клиента.
     const endpoint = "";
     const params = {
       cat: "movie",
-      sort: "top", // Параметр API остается 'top' согласно URL
+      sort: "top",
       page: page,
     };
 
@@ -252,7 +236,6 @@ export class MediaService {
         totalResults: response.total_results,
       };
     } catch (error) {
-      // Комментарий для "себя": Обновляем сообщение об ошибке для консистентности
       console.error(`Error fetching popular movies (page ${page}):`, error);
       throw error;
     }
@@ -269,7 +252,7 @@ export class MediaService {
     // Комментарий для "себя": Используем cat=tv и sort=top.
     const endpoint = "";
     const params = {
-      cat: "tv", // Фильтруем по сериалам
+      cat: "tv",
       sort: "top",
       page: page,
     };
@@ -279,11 +262,9 @@ export class MediaService {
         endpoint,
         params
       );
-
-      // Комментарий для "себя": Ожидаем только сериалы.
       const items = response.results
-        .filter(isTVShowMedia) // Убедимся, что это точно сериалы
-        .map((tvData) => new TVShow(tvData)); // Создаем экземпляры TVShow
+        .filter(isTVShowMedia)
+        .map((tvData) => new TVShow(tvData));
 
       return {
         items: items,
@@ -318,10 +299,8 @@ export class MediaService {
         params
       );
 
-      // Комментарий для "себя": Маппим сырые данные в наши классы сущностей,
-      // используя приватный фабричный метод. Фильтруем null значения.
       const items = response.results
-        .map(this.#createMediaItem) // Используем фабричный метод
+        .map(this.#createMediaItem)
         .filter((item): item is Movie | TVShow => item !== null);
 
       return {
@@ -350,7 +329,7 @@ export class MediaService {
     movieId: number,
     options?: MediaDetailsOptions
   ): Promise<Movie> {
-    const endpoint = `3/movie/${movieId}`; // Путь к API v3
+    const endpoint = `3/movie/${movieId}`;
     const params: Record<string, string | number> = {};
 
     if (options?.language) {
@@ -361,9 +340,7 @@ export class MediaService {
     }
 
     try {
-      // Запрашиваем ДЕТАЛИ фильма, ожидаем тип MovieMedia
       const movieData = await this.#apiClient.get<MovieMedia>(endpoint, params);
-      // Создаем экземпляр Movie из полученных данных
       return new Movie(movieData);
     } catch (error) {
       console.error(`Error fetching details for movie ID ${movieId}:`, error);
@@ -382,7 +359,7 @@ export class MediaService {
     tvShowId: number,
     options?: MediaDetailsOptions
   ): Promise<TVShow> {
-    const endpoint = `3/tv/${tvShowId}`; // Путь к API v3 для сериалов
+    const endpoint = `3/tv/${tvShowId}`;
     const params: Record<string, string | number> = {};
 
     if (options?.language) {
@@ -393,12 +370,10 @@ export class MediaService {
     }
 
     try {
-      // Запрашиваем ДЕТАЛИ сериала, ожидаем тип TVShowMedia
       const tvShowData = await this.#apiClient.get<TVShowMedia>(
         endpoint,
         params
       );
-      // Создаем экземпляр TVShow из полученных данных
       return new TVShow(tvShowData);
     } catch (error) {
       console.error(
@@ -428,9 +403,6 @@ export class MediaService {
         endpoint,
         params
       );
-
-      // Комментарий для "себя": Маппим сырые данные в наши классы сущностей,
-      // используя приватный фабричный метод. Фильтруем null значения.
       const items = response.results
         .map(this.#createMediaItem)
         .filter((item): item is Movie | TVShow => item !== null);
@@ -457,7 +429,7 @@ export class MediaService {
   async getLatestMovies(page: number = 1): Promise<PaginatedMovieResult> {
     const endpoint = "";
     const params = {
-      cat: "movie", // Запрашиваем только фильмы
+      cat: "movie",
       sort: "latest",
       page: page,
     };
@@ -467,7 +439,6 @@ export class MediaService {
         endpoint,
         params
       );
-      // Ожидаем только фильмы, фильтруем и маппим
       const items = response.results
         .filter(isMovieMedia)
         .map((movieData) => new Movie(movieData));
@@ -532,7 +503,6 @@ export class MediaService {
     query: string,
     page: number = 1
   ): Promise<PaginatedMovieResult> {
-    // Комментарий для "себя": Используем специальный эндпоинт /search/movie
     const endpoint = "/search/movie";
     const params = {
       query: query,
@@ -545,7 +515,6 @@ export class MediaService {
         params
       );
 
-      // Ожидаем только фильмы в результатах поиска
       const items = response.results
         .filter(isMovieMedia)
         .map((movieData) => new Movie(movieData));
@@ -577,7 +546,6 @@ export class MediaService {
     query: string,
     page: number = 1
   ): Promise<PaginatedTVShowResult> {
-    // Комментарий для "себя": Используем специальный эндпоинт /search/tv
     const endpoint = "/search/tv";
     const params = {
       query: query,
@@ -590,7 +558,6 @@ export class MediaService {
         params
       );
 
-      // Ожидаем только сериалы в результатах поиска
       const items = response.results
         .filter(isTVShowMedia)
         .map((tvData) => new TVShow(tvData));
@@ -632,7 +599,7 @@ export class MediaService {
         `Error fetching collection details for ID ${collectionId}:`,
         error
       );
-      throw error; // Перебрасываем ошибку для дальнейшей обработки
+      throw error;
     }
   }
 
@@ -648,11 +615,11 @@ export class MediaService {
    */
   async getCurrentYearMovies(page: number = 1): Promise<PaginatedMovieResult> {
     const targetYear = new Date().getFullYear(); // Всегда берем текущий год
-    const endpoint = ""; // Базовый эндпоинт прокси
+    const endpoint = "";
     const params = {
       cat: "movie",
-      sort: "now", // Как в примере URL
-      airdate: targetYear, // Динамический год
+      sort: "now",
+      airdate: targetYear,
       page: page,
     };
 
@@ -662,9 +629,8 @@ export class MediaService {
         params
       );
 
-      // Ожидаем только фильмы, так как указан cat=movie
       const items = response.results
-        .filter(isMovieMedia) // На всякий случай проверяем тип
+        .filter(isMovieMedia)
         .map((movieData) => new Movie(movieData));
 
       return {
@@ -695,10 +661,10 @@ export class MediaService {
   async getCurrentYearTvShows(
     page: number = 1
   ): Promise<PaginatedTVShowResult> {
-    const targetYear = new Date().getFullYear(); // Всегда берем текущий год
-    const endpoint = ""; // Базовый эндпоинт прокси
+    const targetYear = new Date().getFullYear();
+    const endpoint = "";
     const params = {
-      cat: "tv", // Запрашиваем сериалы
+      cat: "tv",
       sort: "now",
       airdate: targetYear,
       page: page,
@@ -710,9 +676,8 @@ export class MediaService {
         params
       );
 
-      // Ожидаем только сериалы
       const items = response.results
-        .filter(isTVShowMedia) // Проверяем тип
+        .filter(isTVShowMedia)
         .map((tvData) => new TVShow(tvData));
 
       return {
@@ -729,7 +694,4 @@ export class MediaService {
       throw error;
     }
   }
-
-  // Комментарий для "себя": Здесь можно добавить другие методы:
-  // async searchMedia(query: string, page: number = 1): Promise<PaginatedMediaResult> { ... }
 }

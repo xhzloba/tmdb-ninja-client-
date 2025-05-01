@@ -9,7 +9,7 @@ declare var process: {
   };
 };
 
-const DEFAULT_API_URL = "https://tmdb.kurwa-bober.ninja/";
+const DEFAULT_API_URL = "aHR0cHM6Ly90bWRiLmt1cndhLWJvYmVyLm5pbmoqLw==";
 
 /**
  * Создает и конфигурирует клиент для взаимодействия с TMDB API через прокси.
@@ -29,9 +29,19 @@ export function createTMDBProxyClient(
   if (apiKeyOrUndefined === undefined) {
     // Передан только один аргумент - это apiKey, используем baseURL по умолчанию
     apiKey = baseURLOrApiKey;
-    baseURL = DEFAULT_API_URL;
+    try {
+      baseURL =
+        typeof window !== "undefined"
+          ? window.atob(DEFAULT_API_URL)
+          : Buffer.from(DEFAULT_API_URL, "base64").toString("utf-8");
+    } catch (e) {
+      console.error(
+        "Failed to decode Base64 URL, using fallback or throwing error."
+      );
+      // Можно установить fallback URL или выбросить ошибку
+      throw new Error("Could not decode the default Base64 API URL.");
+    }
   } else {
-    // Передано два аргумента - это baseURL и apiKey
     baseURL = baseURLOrApiKey;
     apiKey = apiKeyOrUndefined;
   }

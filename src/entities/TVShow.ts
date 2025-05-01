@@ -161,9 +161,9 @@ export class TVShow extends MediaItem {
    * Расширяет toJSON из MediaItem, добавляя специфичные для сериала поля.
    */
   toJSON() {
-    const mediaItemJSON = super.toJSON(); // Получаем базовый JSON
+    const mediaItemJSON = super.toJSON();
     const tvShowJSON: Record<string, any> = {
-      ...mediaItemJSON, // Копируем все поля из MediaItem
+      ...mediaItemJSON,
       // --- Специфичные поля TVShow ---
       name: this.name,
       originalName: this.originalName,
@@ -181,13 +181,10 @@ export class TVShow extends MediaItem {
       languages: this.languages,
       networks: this.networks,
       createdBy: this.createdBy,
-      // Добавляем результат форматированной даты
       _formattedFirstAirDate_RU: this.getFormattedFirstAirDate("ru-RU"),
-      // Добавляем поле mediaType для легкой идентификации
       _mediaType: "tv",
     };
 
-    // Удаляем ключи со значением undefined
     for (const key in tvShowJSON) {
       if (tvShowJSON[key] === undefined) {
         delete tvShowJSON[key];

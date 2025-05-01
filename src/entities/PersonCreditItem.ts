@@ -1,6 +1,8 @@
 import { Movie } from "./Movie";
 import { TVShow } from "./TVShow";
 import {
+  MovieMedia,
+  TVShowMedia,
   PersonCastCreditMovieResponse,
   PersonCastCreditTVResponse,
   PersonCrewCreditMovieResponse,
@@ -30,10 +32,10 @@ export class PersonCastCreditItem {
 
     // Создаем Movie или TVShow на основе media_type
     if (isPersonCastCreditMovie(data)) {
-      this.media = new Movie(data as any); // Используем as any, т.к. тип данных кредита отличается от MovieMedia
+      this.media = new Movie(data as unknown as MovieMedia);
       this.order = data.order;
     } else if (isPersonCastCreditTV(data)) {
-      this.media = new TVShow(data as any); // Используем as any
+      this.media = new TVShow(data as unknown as TVShowMedia);
       this.episodeCount = data.episode_count;
     } else {
       // Обработка непредвиденного случая
@@ -90,11 +92,10 @@ export class PersonCrewCreditItem {
     this.job = data.job;
     this.creditId = data.credit_id;
 
-    // Создаем Movie или TVShow на основе media_type
     if (isPersonCrewCreditMovie(data)) {
-      this.media = new Movie(data as any); // Используем as any
+      this.media = new Movie(data as unknown as MovieMedia);
     } else if (isPersonCrewCreditTV(data)) {
-      this.media = new TVShow(data as any); // Используем as any
+      this.media = new TVShow(data as unknown as TVShowMedia);
       this.episodeCount = data.episode_count;
     } else {
       console.warn("Unknown crew credit type:", data);
@@ -125,7 +126,6 @@ export class PersonCrewCreditItem {
       job: this.job,
       creditId: this.creditId,
       episodeCount: this.episodeCount,
-      // Сериализуем вложенный медиа-объект
       media: this.media?.toJSON ? this.media.toJSON() : this.media,
     };
   }

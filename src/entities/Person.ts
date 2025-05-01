@@ -16,7 +16,6 @@ export class Person {
   constructor(data: PersonDetailsResponse) {
     this.#data = data;
 
-    // Обрабатываем кредиты, если они есть
     if (data.combined_credits) {
       if (Array.isArray(data.combined_credits.cast)) {
         this.#castCredits = data.combined_credits.cast.map(
@@ -207,7 +206,6 @@ export class Person {
       return [];
     }
 
-    // Берем первые N кредитов и извлекаем из них медиа
     return relevantCredits
       .slice(0, limit)
       .map((credit) => credit.media)
@@ -263,7 +261,6 @@ export class Person {
    * Возвращает объект, представляющий Person для JSON-сериализации.
    */
   toJSON() {
-    // Возвращаем исходные данные + обработанные кредиты
     return {
       ...this.#data,
       castCredits: this.#castCredits.map((credit) =>

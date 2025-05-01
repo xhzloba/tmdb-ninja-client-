@@ -138,8 +138,6 @@ export abstract class MediaItem {
     this.#images = data.images;
   }
 
-  // --- Геттеры для доступа к приватным полям ---
-
   get id(): number {
     return this.#id;
   }
@@ -150,9 +148,8 @@ export abstract class MediaItem {
     return this.#backdropPath;
   }
   get genreIds(): number[] {
-    // Проверяем, что #genreIds - это массив, прежде чем копировать
     return Array.isArray(this.#genreIds) ? [...this.#genreIds] : [];
-  } // Возвращаем копию массива или пустой массив
+  }
   get originalLanguage(): string {
     return this.#originalLanguage;
   }
@@ -172,9 +169,8 @@ export abstract class MediaItem {
     return this.#voteCount;
   }
   get names(): string[] {
-    // Проверяем, что #names - это массив, прежде чем копировать
     return Array.isArray(this.#names) ? [...this.#names] : [];
-  } // Возвращаем копию или пустой массив
+  }
   get pgRating(): number {
     return this.#pgRating;
   }
@@ -202,7 +198,6 @@ export abstract class MediaItem {
 
   // --- Геттеры для новых детальных полей ---
   get genres(): Genre[] {
-    // Возвращаем копию для предотвращения мутаций или пустой массив
     return Array.isArray(this.#genres) ? [...this.#genres] : [];
   }
   get homepage(): string | null | undefined {
@@ -228,7 +223,7 @@ export abstract class MediaItem {
   }
   get releaseDates(): ReleaseDatesResponse | undefined {
     return this.#releaseDates;
-  } // Можно сделать deep copy, если нужна полная иммутабельность
+  }
   get keywords(): KeywordsResponse | undefined {
     return this.#keywords;
   }
@@ -255,7 +250,7 @@ export abstract class MediaItem {
     const count = this.voteCount;
 
     if (count === null || count === undefined || count < 0) {
-      return null; // Или можно вернуть 'N/A' или '-'
+      return null;
     }
     if (count === 0) {
       return "0";
@@ -265,13 +260,9 @@ export abstract class MediaItem {
     }
 
     const thousands = count / 1000;
-    // Проверяем, целое ли число тысяч (чтобы не писать 1.0K)
-    if (thousands % 1 === 0) {
-      return `${thousands}K`;
-    } else {
-      // Оставляем один знак после запятой
-      return `${thousands.toFixed(1)}K`;
-    }
+
+    if (thousands % 1 === 0) return `${thousands}K`;
+    else return `${thousands.toFixed(1)}K`;
   }
 
   /**
@@ -284,7 +275,6 @@ export abstract class MediaItem {
     if (!this.#posterPath) {
       return null;
     }
-    // Комментарий для "себя": Убираем возможный слеш в начале пути из API
     const path = this.#posterPath.startsWith("/")
       ? this.#posterPath.substring(1)
       : this.#posterPath;
@@ -301,7 +291,6 @@ export abstract class MediaItem {
     if (!this.#backdropPath) {
       return null;
     }
-    // Комментарий для "себя": Аналогично убираем слеш
     const path = this.#backdropPath.startsWith("/")
       ? this.#backdropPath.substring(1)
       : this.#backdropPath;
@@ -376,14 +365,13 @@ export abstract class MediaItem {
       contentRatings: this.contentRatings,
       credits: this.credits,
       images: this.images,
-      // --- Добавим результаты некоторых полезных методов ---
+
       _posterUrl_w500: this.getPosterUrl("w500"),
       _backdropUrl_w780: this.getBackdropUrl("w780"),
       _directors: this.getDirectors(),
       _cast_first10: this.getCast().slice(0, 10), // Пример: первые 10 актеров
     };
 
-    // Удаляем ключи со значением undefined, чтобы JSON был чище
     for (const key in obj) {
       if (obj[key] === undefined) {
         delete obj[key];
