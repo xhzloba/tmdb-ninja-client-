@@ -437,6 +437,9 @@
       let mediaList = []; // Общий список для хранения загруженных Movie/TVShow объектов
       let currentMethodName = viewSelector ? viewSelector.value : "getPopular"; // Текущий выбранный метод
       let currentTotalResults = null; // Новое состояние для общего кол-ва
+      let currentViewMode = "list"; // 'list' или 'keyword'
+      let currentKeywordId = null;
+      let currentKeywordName = null;
 
       // --- Хелперы ---
       function showDetailsStatus(message, isError = false) {
@@ -506,12 +509,30 @@
               details.title || details.name
             }`;
 
-          // --- Возвращаем вывод всего объекта details как JSON ---
-          let detailsHtml = `<pre class="json-output">
-      ${JSON.stringify(details, null, 2)}
-      </pre>`;
+          // --- Отображение ключевых слов (если есть) ---
+          let keywordsHtml = "<p>Ключевые слова: Нет</p>";
+          // У TMDB API ключевые слова для фильмов в movie.keywords.keywords,
+          // а для сериалов в tv.keywords.results. Проверяем оба.
+          const keywordsArray =
+            details.keywords?.keywords || details.keywords?.results;
+          if (keywordsArray && keywordsArray.length > 0) {
+            keywordsHtml = "<p>Ключевые слова: ";
+            keywordsHtml += keywordsArray
+              .map(
+                (kw) =>
+                  `<a href="#" class="keyword-link" data-keyword-id="${kw.id}" style="margin-right: 5px; text-decoration:underline; color: #0056b3;">${kw.name}</a>`
+              )
+              .join(", ");
+            keywordsHtml += "</p>";
+          }
 
-          detailsContentElement.innerHTML = detailsHtml;
+          // --- Вывод остального объекта details как JSON ---
+          let detailsJsonHtml = `<h4>Полные данные (JSON):</h4><pre class="json-output">
+${JSON.stringify(details, null, 2)}
+</pre>`;
+
+          detailsContentElement.innerHTML = keywordsHtml + detailsJsonHtml;
+
           detailsStatusElement.style.display = "none";
           detailsContentElement.classList.remove("hidden");
           if (toggleDetailsBtn) toggleDetailsBtn.textContent = "▲";
@@ -530,7 +551,150 @@
         }
       }
 
-      // --- Функция загрузки и отображения СПИСКА МЕДИА ---
+      // --- Функция загрузки и отображения по КЛЮЧЕВОМУ СЛОВУ ---
+      async function fetchAndDisplayByKeyword(
+        keywordId,
+        keywordName,
+        page = 1
+      ) {
+        if (isLoading) return;
+        isLoading = true;
+        currentViewMode = "keyword"; // Устанавливаем режим
+        currentKeywordId = keywordId;
+        currentKeywordName = keywordName;
+
+        errorMessageElement.style.display = "none";
+        if (page === 1) {
+          mediaListElement.innerHTML = "";
+          mediaList = [];
+          currentPage = 1;
+        }
+        if (loadMoreBtn) loadMoreBtn.textContent = "Загрузка...";
+
+        // Обновляем заголовок списка
+        listTitleElement.firstChild.textContent = `Фильмы по слову: "${keywordName}" `;
+        if (currentMethodDisplayElement)
+          currentMethodDisplayElement.textContent = `(ID: ${keywordId})`;
+
+        try {
+          // Стандартный вызов метода (теперь он использует правильный URL)
+          const result = await client.media.discoverMoviesByKeyword(keywordId, {
+            page: page,
+            language: "ru", // Запрашиваем на русском
+          });
+
+          console.log(
+            `Result object for keyword ${keywordId} page ${page}:`,
+            result
+          );
+          totalPages = result.totalPages;
+          currentPage = result.page;
+          if (page === 1) {
+            currentTotalResults = result.totalResults ?? null;
+            if (currentMethodDisplayElement && currentTotalResults !== null) {
+              currentMethodDisplayElement.textContent += `, Всего: ${currentTotalResults}`;
+            }
+          }
+
+          // Отображаем результаты (код рендеринга тот же, что и в fetchAndDisplay)
+          if (result && result.items) {
+            result.items.forEach((item) => {
+              if (item instanceof Movie || item instanceof TVShow) {
+                mediaList.push(item);
+                const li = document.createElement("li");
+                li.setAttribute("data-media-id", item.id.toString());
+                const year =
+                  item instanceof Movie
+                    ? item.releaseDate?.substring(0, 4) || "N/A"
+                    : item.firstAirDate?.substring(0, 4) || "N/A";
+                const kpId = item.kinopoiskId ?? "N/A";
+                const imdbIdRaw = item.imdbId;
+                const imdbId = imdbIdRaw ?? "N/A";
+                const imdbRatingRaw = item.imdbRating;
+                const imdbRatingNum =
+                  typeof imdbRatingRaw === "string"
+                    ? parseFloat(imdbRatingRaw)
+                    : imdbRatingRaw;
+                const imdbRating =
+                  !isNaN(imdbRatingNum) && imdbRatingNum !== null
+                    ? imdbRatingNum.toFixed(1)
+                    : "N/A";
+                const tmdbRating = item.voteAverage?.toFixed(1) ?? "N/A";
+                const kpRatingRaw = item.kpRating;
+                const kpRatingNum =
+                  typeof kpRatingRaw === "string"
+                    ? parseFloat(kpRatingRaw)
+                    : kpRatingRaw;
+                const kpRating =
+                  !isNaN(kpRatingNum) && kpRatingNum !== null
+                    ? kpRatingNum.toFixed(1)
+                    : "N/A";
+                const releaseQuality = item.releaseQuality ?? "N/A";
+                const overview = item.overview || "";
+
+                li.innerHTML = `
+                     <img src="${item.getPosterUrl(
+                       "w342"
+                     )}" alt="Постер" loading="lazy">
+                     <div class="media-card-info">
+                         <strong>${item.title || item.name}</strong>
+                         <small class="media-type-year">(${
+                           item instanceof Movie ? "Фильм" : "Сериал"
+                         }, ${year})</small>
+                         <div class="media-ratings">
+                             <span>TMDB: ${tmdbRating}</span>
+                             <span>KP: ${kpRating}</span>
+                             <span>IMDb: ${imdbRating}</span>
+                         </div>
+                         <div class="media-ids-quality">
+                             <span>KP ID: ${kpId}</span>
+                             <span>IMDb ID: ${imdbId}</span>
+                             ${
+                               releaseQuality !== "N/A"
+                                 ? `<span class="media-quality">${releaseQuality}</span>`
+                                 : ""
+                             }
+                         </div>
+                         <p class="media-overview">${overview}</p>
+                     </div>
+                 `;
+                mediaListElement.appendChild(li);
+              } else {
+                console.warn("Получен элемент не Movie/TVShow:", item);
+              }
+            });
+          } else {
+            console.warn(
+              "Результат API (keyword) не содержит поля items:",
+              result
+            );
+          }
+
+          // Кнопка "Загрузить еще"
+          if (loadMoreBtn) {
+            loadMoreBtn.style.display =
+              currentPage < totalPages ? "block" : "none";
+            loadMoreBtn.textContent = "Загрузить еще...";
+          }
+        } catch (error) {
+          console.error(
+            `Ошибка при загрузке по ключевому слову ${keywordId}:`,
+            error
+          );
+          let msg = "Неизвестная ошибка";
+          if (error instanceof ApiError) {
+            msg = `API Ошибка (${error.statusCode}): ${
+              error.apiMessage || error.message
+            }`;
+          }
+          errorMessageElement.textContent = `Не удалось загрузить данные по слову "${keywordName}". ${msg}`;
+          errorMessageElement.style.display = "block"; // Показываем ошибку
+        } finally {
+          isLoading = false;
+        }
+      }
+
+      // --- Функция загрузки и отображения СПИСКА МЕДИА (из селектора) ---
       async function fetchAndDisplay(methodName, page = 1) {
         if (isLoading) return;
         isLoading = true;
@@ -544,16 +708,10 @@
 
         // Обновляем заголовок
         const selectedOption = viewSelector.options[viewSelector.selectedIndex];
-        listTitleElement.firstChild.textContent = selectedOption.text + " "; // Обновляем только текст заголовка, оставляя span
-        /* --- Удаляем этот блок отсюда ---
-              if (currentMethodDisplayElement) {
-                let infoText = `Метод API: ${methodName}`;
-                if (currentTotalResults !== null) {
-                  infoText += `, Всего: ${currentTotalResults}`;
-                }
-                currentMethodDisplayElement.textContent = infoText;
-              }
-              */
+        listTitleElement.firstChild.textContent = selectedOption.text + " "; // Обновляем только текст заголовка
+        currentViewMode = "list"; // Устанавливаем режим 'list'
+        currentKeywordId = null; // Сбрасываем ID ключевого слова
+        currentKeywordName = null;
 
         try {
           let result;
@@ -704,9 +862,15 @@
         }
       }
 
-      // --- Обработчик клика на список (для показа деталей) ---
-      mediaListElement.addEventListener("click", function (event) {
-        if (event.target.closest("li")) {
+      // --- Обработчик клика на список (для показа деталей И КЛЮЧЕВЫХ СЛОВ) ---
+      document.body.addEventListener("click", function (event) {
+        // Вешаем на body для надежности
+        const listItem = event.target.closest("li");
+        const keywordLink = event.target.closest(".keyword-link");
+
+        // Клик по элементу списка для показа деталей
+        if (listItem && listItem.closest("#media-list")) {
+          // Убедимся, что li из нужного списка
           const mediaId = event.target
             .closest("li")
             .getAttribute("data-media-id");
@@ -719,12 +883,41 @@
             }
           }
         }
+
+        // Клик по ключевому слову в деталях
+        else if (keywordLink && keywordLink.closest("#details-content")) {
+          // Убедимся, что ссылка из блока деталей
+          event.preventDefault(); // Предотвращаем переход по ссылке
+          const keywordId = parseInt(keywordLink.dataset.keywordId, 10);
+          const keywordName = keywordLink.textContent;
+          // Проверяем, что ID действительно число
+          if (!isNaN(keywordId)) {
+            console.log(
+              `Клик по ключевому слову: ${keywordName} (ID: ${keywordId})`
+            );
+            // Скрываем детали перед загрузкой нового списка
+            if (detailsContainerElement)
+              detailsContainerElement.style.display = "none";
+            // Сбрасываем селектор на первую опцию (не обязательно, но для консистентности)
+            if (viewSelector) viewSelector.selectedIndex = 0;
+            fetchAndDisplayByKeyword(keywordId, keywordName, 1); // Загружаем первую страницу по ключевому слову
+          }
+        }
       });
 
-      // --- Обработчик для кнопки "Загрузить еще" ---
+      // --- Обработчик для кнопки "Загрузить еще" (общий) ---
       loadMoreBtn.addEventListener("click", function () {
         if (currentPage < totalPages) {
-          fetchAndDisplay(currentMethodName, currentPage + 1);
+          // Вызываем нужную функцию в зависимости от режима
+          if (currentViewMode === "list") {
+            fetchAndDisplay(currentMethodName, currentPage + 1);
+          } else if (currentViewMode === "keyword" && currentKeywordId) {
+            fetchAndDisplayByKeyword(
+              currentKeywordId,
+              currentKeywordName,
+              currentPage + 1
+            );
+          }
         }
       });
 
@@ -759,6 +952,67 @@
       } else {
         console.error("Не найден элемент #view-selector");
       }
+
+      // Тестирование метода discoverMoviesByKeyword через консоль
+      console.log("Тестирование метода discoverMoviesByKeyword:");
+      console.log("---------------------------------------");
+      // Тест с одним ID ключевого слова
+      client.media
+        .discoverMoviesByKeyword(703, { language: "ru" })
+        .then((result) => {
+          console.log(
+            "✅ Тест #1: Фильмы с ключевым словом 'corruption' (ID: 703):"
+          );
+          console.log(
+            `Найдено: ${result.totalResults} фильмов, страница ${result.page}/${result.totalPages}`
+          );
+          console.log("Первые 3 результата:", result.items.slice(0, 3));
+        })
+        .catch((error) => {
+          console.error("❌ Ошибка в тесте #1:", error);
+        });
+
+      // Тест с несколькими ID ключевых слов и оператором AND
+      setTimeout(() => {
+        client.media
+          .discoverMoviesByKeyword([878, 9663], {
+            operator: "AND",
+            language: "ru",
+          })
+          .then((result) => {
+            console.log(
+              "✅ Тест #2: Фильмы с ключевыми словами 'sci-fi' И 'alien' (ID: 878, 9663):"
+            );
+            console.log(
+              `Найдено: ${result.totalResults} фильмов, страница ${result.page}/${result.totalPages}`
+            );
+            console.log("Первые 3 результата:", result.items.slice(0, 3));
+          })
+          .catch((error) => {
+            console.error("❌ Ошибка в тесте #2:", error);
+          });
+      }, 1000); // Задержка в 1 секунду между запросами
+
+      // Тест с ID 818,3133
+      setTimeout(() => {
+        client.media
+          .discoverMoviesByKeyword([818, 3133], {
+            language: "ru",
+            operator: "AND",
+          })
+          .then((result) => {
+            console.log(
+              "✅ Тест #3: Фильмы с ключевыми словами ID: 818 И 3133 (через ','):"
+            );
+            console.log(
+              `Найдено: ${result.totalResults} фильмов, страница ${result.page}/${result.totalPages}`
+            );
+            console.log("Первые 3 результата:", result.items.slice(0, 3));
+          })
+          .catch((error) => {
+            console.error("❌ Ошибка в тесте #3:", error);
+          });
+      }, 2000); // Задержка в 2 секунды после второго запроса
     </script>
   </body>
 </html>

@@ -177,6 +177,7 @@
     ```
 
 - **`client.media.getCollectionDetails( collectionId, [options] )`**
+
   - Получает детали коллекции фильмов по её `collectionId`.
   - `options`: `{ language?: string }`. Параметр `appendToResponse` здесь не используется, так как основной запрос коллекции уже включает базовую информацию о её частях (фильмах).
   - Возвращает: `Promise<Collection>`.
@@ -193,6 +194,318 @@
           );
         });
       });
+    ```
+
+- **`client.media.discoverMoviesByKeyword( keywordIds, [options] )`**
+
+  - Находит фильмы, связанные с указанным ключевым словом (или несколькими).
+  - `keywordIds`: ID ключевого слова (`number`) или массив ID (`number[]`).
+  - `options`: `{ page?: number, language?: string, operator?: 'AND' | 'OR' }`.
+    - `page`: Номер страницы результатов (по умолчанию `1`).
+    - `language`: Код языка для локализации результатов (по умолчанию английский).
+    - `operator`: Определяет логику объединения нескольких ID ключевых слов:
+      - `'AND'` (по умолчанию): Фильмы должны содержать **ВСЕ** указанные ключевые слова (ID объединяются через запятую).
+      - `'OR'`: Фильмы должны содержать **ХОТЯ БЫ ОДНО** из указанных ключевых слов (ID объединяются через вертикальную черту `|`).
+  - Возвращает: `Promise<PaginatedMovieResult>` (список `Movie`).
+  - **Использование в UI**: Идеально подходит для создания фильтров по категориям или тематикам фильмов. Получив список ключевых слов из детального представления фильма, вы можете дать пользователям возможность исследовать похожие фильмы.
+  - **Расширение результатов**: Для получения полных деталей фильмов из списка можно выполнить дополнительный запрос `getMovieDetails` с параметром `appendToResponse`.
+  - ```typescript
+    // Базовое использование - найти фильмы по одному ключевому слову
+    client.media
+      .discoverMoviesByKeyword(703, { language: "ru" })
+      .then((result) => {
+        console.log(`Найдено ${result.totalResults} фильмов о коррупции`);
+        // Обработка списка фильмов
+        result.items.forEach((movie) => {
+          console.log(`${movie.title} (${movie.releaseDate?.substring(0, 4)})`);
+        });
+      });
+
+    // Поиск фильмов соответствующих ВСЕМ указанным ключевым словам
+    // Например: научно-фантастические фильмы про инопланетян
+    client.media
+      .discoverMoviesByKeyword([878, 9663], { operator: "AND" })
+      .then((data) => {
+        // Более строгий фильтр - меньше результатов
+        console.log(`Найдено ${data.totalResults} фильмов`);
+      });
+
+    // Поиск фильмов соответствующих ЛЮБОМУ из указанных ключевых слов
+    // Например: фильмы основанные на книгах ИЛИ с антиутопическим сюжетом
+    client.media
+      .discoverMoviesByKeyword([818, 3133], { operator: "OR", page: 2 })
+      .then((data) => {
+        // Более широкий фильтр - больше результатов
+        console.log(`Страница ${data.page} из ${data.totalPages}`);
+      });
+
+    // Пример обогащения результатов дополнительными данными
+    async function getDetailedMoviesByKeyword(keywordId) {
+      // Сначала получаем список фильмов по ключевому слову
+      const result = await client.media.discoverMoviesByKeyword(keywordId, {
+        language: "ru",
+      });
+
+      // Затем для первых трех фильмов загружаем полные детали с трейлерами
+      const detailedMovies = await Promise.all(
+        result.items.slice(0, 3).map((movie) =>
+          client.media.getMovieDetails(movie.id, {
+            language: "ru",
+            appendToResponse: ["videos", "credits", "keywords"],
+          })
+        )
+      );
+
+      return {
+        totalFound: result.totalResults,
+        detailedItems: detailedMovies,
+      };
+    }
+    ```
+
+  - **Примеры использования в React-компонентах:**
+
+    ```jsx
+    // Пример 1: Компонент для отображения списка фильмов по ключевому слову
+    import React, { useState, useEffect } from "react";
+    import { createTMDBProxyClient } from "tmdb-xhzloba";
+
+    // Компонент списка фильмов по ключевому слову
+    const KeywordMoviesList = ({ keywordId, keywordName }) => {
+      const [movies, setMovies] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const [page, setPage] = useState(1);
+      const [totalPages, setTotalPages] = useState(0);
+
+      // Инициализация клиента
+      const client = createTMDBProxyClient("YOUR_API_KEY");
+
+      useEffect(() => {
+        const fetchMovies = async () => {
+          setLoading(true);
+          try {
+            const result = await client.media.discoverMoviesByKeyword(
+              keywordId,
+              {
+                language: "ru",
+                page: page,
+              }
+            );
+
+            setMovies(result.items);
+            setTotalPages(result.totalPages);
+            setLoading(false);
+          } catch (err) {
+            setError("Не удалось загрузить фильмы");
+            setLoading(false);
+            console.error(err);
+          }
+        };
+
+        fetchMovies();
+      }, [keywordId, page]);
+
+      const handleNextPage = () => {
+        if (page < totalPages) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      };
+
+      const handlePrevPage = () => {
+        if (page > 1) {
+          setPage((prevPage) => prevPage - 1);
+        }
+      };
+
+      if (loading) return <div>Загрузка фильмов...</div>;
+      if (error) return <div>{error}</div>;
+
+      return (
+        <div className="keyword-movies">
+          <h2>Фильмы по теме: {keywordName}</h2>
+
+          <div className="movies-grid">
+            {movies.map((movie) => (
+              <div key={movie.id} className="movie-card">
+                <img
+                  src={movie.getPosterUrl("w200")}
+                  alt={`Постер ${movie.title}`}
+                />
+                <h3>{movie.title}</h3>
+                <p>{movie.releaseDate?.substring(0, 4) || "Нет даты"}</p>
+                <p className="rating">★ {movie.voteAverage.toFixed(1)}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="pagination">
+            <button onClick={handlePrevPage} disabled={page === 1}>
+              Назад
+            </button>
+            <span>
+              Страница {page} из {totalPages}
+            </span>
+            <button onClick={handleNextPage} disabled={page === totalPages}>
+              Вперед
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    // Пример 2: Детальная страница фильма с похожими фильмами на основе ключевых слов
+    const MovieDetails = ({ movieId }) => {
+      const [movie, setMovie] = useState(null);
+      const [relatedMovies, setRelatedMovies] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+
+      const client = createTMDBProxyClient("YOUR_API_KEY");
+
+      useEffect(() => {
+        const fetchMovieDetails = async () => {
+          setLoading(true);
+          try {
+            // Загружаем детали фильма со всеми дополнительными данными
+            const movieDetails = await client.media.getMovieDetails(movieId, {
+              language: "ru",
+              appendToResponse: ["credits", "videos", "keywords"],
+            });
+
+            setMovie(movieDetails);
+
+            // Если у фильма есть ключевые слова, загружаем связанные фильмы
+            if (movieDetails.keywords?.keywords?.length > 0) {
+              // Берем первые 2 ключевых слова
+              const keywordIds = movieDetails.keywords.keywords
+                .slice(0, 2)
+                .map((kw) => kw.id);
+
+              // Ищем фильмы с теми же ключевыми словами
+              const relatedResult = await client.media.discoverMoviesByKeyword(
+                keywordIds,
+                {
+                  language: "ru",
+                  operator: "OR", // Фильмы с любым из этих ключевых слов
+                }
+              );
+
+              // Фильтруем, чтобы исключить текущий фильм из результатов
+              const filteredMovies = relatedResult.items
+                .filter((relatedMovie) => relatedMovie.id !== movieId)
+                .slice(0, 6); // Берем только первые 6 результатов
+
+              setRelatedMovies(filteredMovies);
+            }
+
+            setLoading(false);
+          } catch (err) {
+            setError("Ошибка при загрузке информации о фильме");
+            setLoading(false);
+            console.error(err);
+          }
+        };
+
+        fetchMovieDetails();
+      }, [movieId]);
+
+      if (loading) return <div>Загрузка информации о фильме...</div>;
+      if (error) return <div>{error}</div>;
+      if (!movie) return <div>Фильм не найден</div>;
+
+      // Выбираем трейлер, если есть
+      const trailer = movie.videos?.results?.find(
+        (video) => video.type === "Trailer" && video.site === "YouTube"
+      );
+
+      // Получаем список режиссеров
+      const directors =
+        movie.credits?.crew?.filter((person) => person.job === "Director") ||
+        [];
+
+      // Получаем список ключевых слов
+      const keywords = movie.keywords?.keywords || [];
+
+      return (
+        <div className="movie-details">
+          <div className="movie-header">
+            <img
+              src={movie.getPosterUrl("w300")}
+              alt={`Постер ${movie.title}`}
+              className="movie-poster"
+            />
+
+            <div className="movie-info">
+              <h1>
+                {movie.title}{" "}
+                <span>({movie.releaseDate?.substring(0, 4)})</span>
+              </h1>
+              <p className="tagline">{movie.tagline}</p>
+
+              <div className="rating">★ {movie.voteAverage.toFixed(1)}</div>
+
+              <p className="overview">{movie.overview}</p>
+
+              {directors.length > 0 && (
+                <div className="directors">
+                  <h3>Режиссер{directors.length > 1 ? "ы" : ""}:</h3>
+                  <p>{directors.map((d) => d.name).join(", ")}</p>
+                </div>
+              )}
+
+              {keywords.length > 0 && (
+                <div className="keywords">
+                  <h3>Ключевые слова:</h3>
+                  <div className="keywords-list">
+                    {keywords.map((keyword) => (
+                      <span key={keyword.id} className="keyword">
+                        {keyword.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {trailer && (
+                <div className="trailer">
+                  <h3>Трейлер:</h3>
+                  <iframe
+                    width="560"
+                    height="315"
+                    src={`https://www.youtube.com/embed/${trailer.key}`}
+                    title={`${movie.title} - трейлер`}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {relatedMovies.length > 0 && (
+            <div className="related-movies">
+              <h2>Похожие фильмы по темам</h2>
+              <div className="related-movies-grid">
+                {relatedMovies.map((relatedMovie) => (
+                  <div key={relatedMovie.id} className="related-movie-card">
+                    <img
+                      src={relatedMovie.getPosterUrl("w200")}
+                      alt={`Постер ${relatedMovie.title}`}
+                    />
+                    <h3>{relatedMovie.title}</h3>
+                    <p>
+                      {relatedMovie.releaseDate?.substring(0, 4) || "Нет даты"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
     ```
 
 ## Опция `appendToResponse`
@@ -225,116 +538,4 @@
   - `episode_groups`: Информация об альтернативных группировках эпизодов (например, для DVD-релизов).
   - `screened_theatrically`: Информация о показах сериала в кинотеатрах (если были).
 
-**Примечание:** Доступность и полнота данных для каждого значения `appendToResponse` может варьироваться.
-
-**Пример:**
-
-```typescript
-client.media
-  .getMovieDetails(550, {
-    language: "ru",
-    appendToResponse: ["credits", "videos", "keywords"],
-  })
-  .then((movie) => {
-    console.log("Режиссеры:", movie.getDirectors());
-    console.log("Трейлеры:", movie.videos?.results);
-    console.log(
-      "Ключевые слова:",
-      movie.keywords?.keywords?.map((k) => k.name)
-    );
-  });
-```
-
-## Классы `Movie` и `TVShow`
-
-Результаты методов возвращаются в виде экземпляров классов `Movie` или `TVShow`. Они содержат все поля, полученные от API, а также предоставляют удобные геттеры и методы.
-
-**Общие Поля и Методы (доступны у обоих классов):**
-
-- `id`: `number` - Уникальный ID.
-- `overview`: `string | null` - Описание.
-- `popularity`: `number` - Рейтинг популярности.
-- `voteAverage`: `number` - Средняя оценка (0-10).
-- `voteCount`: `number` - Количество голосов.
-- `posterPath`: `string | null` - Часть URL постера.
-- `backdropPath`: `string | null` - Часть URL фона.
-- `adult`: `boolean` - Контент для взрослых?
-- `originalLanguage`: `string` - Оригинальный язык (код).
-- `genres`: `Genre[] | null` - Массив жанров (требует `getDetails`).
-- `status`: `string | null` - Статус ('Released', 'Ended', 'In Production'...). (требует `getDetails`).
-
-- **`❗ Специальные Поля от Прокси (могут отсутствовать):`**
-
-  - `names`: `string[] | null` - Массив названий (например, русское и оригинальное).
-  - `pgRating`: `number | null` - Возрастной рейтинг (число).
-  - `releaseQuality`: `string | null` - Качество релиза (например, 'webdl', 'camrip').
-  - `kinopoiskId`: `string | null` - ID на Кинопоиске.
-  - `kpRating`: `number | null` - Рейтинг на Кинопоиске.
-  - `imdbId`: `string | null` - ID на IMDb (может дублировать стандартное поле TMDB).
-  - `imdbRating`: `number | null` - Рейтинг на IMDb.
-  - `lastAirDate`: `string | null` - Дата последнего выхода (иногда присутствует и у фильмов).
-
-- `getPosterUrl(size?)`: Возвращает полный URL постера указанного `size` (e.g., 'w185', 'w500').
-  - ```typescript
-    const poster = movie.getPosterUrl("w500"); // => "https://imagetmdb.com/t/p/w500/...jpg"
-    ```
-- `getBackdropUrl(size?)`: Возвращает полный URL фона указанного `size` (e.g., 'w780', 'w1280').
-  - ```typescript
-    const backdrop = tvShow.getBackdropUrl("w1280");
-    ```
-- `getDirectors()`: Возвращает массив режиссеров (требует `credits`).
-  - ```typescript
-    const directors = movie.getDirectors(); // => [{ id: ..., name: '...' }, ...]
-    ```
-- `getCast()`: Возвращает массив актеров (`cast`) (требует `credits`).
-  - ```typescript
-    const cast = movie.getCast().slice(0, 5); // Первые 5 актеров
-    ```
-- `getCrewByDepartment(department)`: Возвращает членов команды из указанного `department` (требует `credits`).
-  - ```typescript
-    const writers = movie.getCrewByDepartment("Writing");
-    ```
-- `getFormattedVoteCount()`: Форматирует `voteCount`. До 1000 - точное число, 1000+ - с суффиксом 'K' (1K, 1.1K). Возвращает строку или `null`. **(Метод базового класса `MediaItem`, доступен у `Movie` и `TVShow`)**
-  - ```typescript
-    // Пример для фильма с voteCount = 998
-    const votesMovie1 = movie.getFormattedVoteCount(); // => "998"
-    // Пример для сериала с voteCount = 1234
-    const votesTV1 = tvShow.getFormattedVoteCount(); // => "1.2K"
-    // Пример для фильма с voteCount = 5000
-    const votesMovie2 = movie.getFormattedVoteCount(); // => "5K"
-    ```
-
-**Поля и Методы `Movie`:**
-
-- `title`: `string` - Название.
-- `originalTitle`: `string` - Оригинальное название.
-- `releaseDate`: `string | null` - Дата выхода (YYYY-MM-DD).
-- `runtime`: `number | null` - Длительность в минутах (требует `getDetails`).
-- `tagline`: `string | null` - Слоган (требует `getDetails`).
-- `getFormattedReleaseDate(locale?)`: Возвращает дату выхода в локализованном формате.
-  - ```typescript
-    const dateRu = movie.getFormattedReleaseDate("ru-RU"); // => "1 марта 2022 г."
-    const dateEn = movie.getFormattedReleaseDate("en-US"); // => "Mar 1, 2022"
-    ```
-- `getFormattedRuntime()`: Возвращает длительность (из `runtime`) в формате "X ч Y мин". Возвращает `null`, если `runtime` не определен или <= 0. (Требует `getDetails`).
-  - ```typescript
-    // Если movie.runtime = 176
-    const formattedRuntime = movie.getFormattedRuntime(); // => "2 ч 56 мин"
-    // Если movie.runtime = 55
-    const shortRuntime = someOtherMovie.getFormattedRuntime(); // => "55 мин"
-    ```
-
-**Поля и Методы `TVShow`:**
-
-- `name`: `string` - Название.
-- `originalName`: `string` - Оригинальное название.
-- `firstAirDate`: `string | null` - Дата первой серии (YYYY-MM-DD).
-- `numberOfSeasons`: `number | null` - Количество сезонов (требует `getDetails`).
-- `numberOfEpisodes`: `number | null` - Количество эпизодов (требует `getDetails`).
-- `seasons`: `Season[] | null` - Массив сезонов (требует `getDetails`).
-- `getFormattedFirstAirDate(locale?)`: Возвращает дату первой серии в локализованном формате.
-  - ```typescript
-    const dateRu = tvShow.getFormattedFirstAirDate("ru-RU");
-    ```
-
-Для получения полного списка полей смотрите исходные типы (`DetailedMovie` и `DetailedTVShow` в `src/types/media.ts`) или используйте `JSON.stringify()` для просмотра всего объекта.
+**Примечание:** Доступность и полнота данных для каждого значения `appendToResponse`

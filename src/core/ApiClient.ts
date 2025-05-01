@@ -65,10 +65,7 @@ export class ApiClient {
   ): Promise<T> {
     const url = new URL(endpoint, this.#baseURL);
 
-    // Всегда добавляем API ключ
-    url.searchParams.append("api_key", this.#apiKey);
-
-    // Добавляем остальные параметры, если они есть
+    // Сначала добавляем все остальные параметры, если они есть
     if (params) {
       Object.entries(params).forEach(
         ([key, value]: [string, string | number]) => {
@@ -79,9 +76,15 @@ export class ApiClient {
       );
     }
 
+    // Затем добавляем API ключ
+    url.searchParams.append("api_key", this.#apiKey);
+
     // Комментарий для "себя": Используем fetch. Можно добавить опции,
     // типа заголовков (Authorization и т.д.), если API потребует.
     try {
+      // Показываем полный URL с реальным API ключом
+      console.log(`🔍 Запрос к API (полный): ${url.toString()}`);
+
       // --- Улучшенный лог запроса ---
       console.log(
         `%c✅ Connection Successful %c| %c📦 Package: %chttps://www.npmjs.com/package/tmdb-xhzloba`,
@@ -150,5 +153,28 @@ export class ApiClient {
     // Комментарий для "себя": Это фасадный метод.
     // Вся логика внутри #request.
     return this.#request<T>(endpoint, params);
+  }
+
+  /**
+   * Получает текущий базовый URL API.
+   * @returns Текущий базовый URL.
+   */
+  public getBaseUrl(): string {
+    return this.#baseURL;
+  }
+
+  /**
+   * Устанавливает новый базовый URL API.
+   * @param newBaseUrl Новый базовый URL для установки.
+   */
+  public setBaseUrl(newBaseUrl: string): void {
+    if (!newBaseUrl) {
+      throw new Error("Base URL cannot be empty.");
+    }
+    this.#baseURL = newBaseUrl;
+    // Убедимся, что baseURL всегда заканчивается на слеш
+    if (!this.#baseURL.endsWith("/")) {
+      this.#baseURL += "/";
+    }
   }
 }

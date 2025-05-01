@@ -694,4 +694,90 @@ export class MediaService {
       throw error;
     }
   }
+
+  /**
+   * Находит фильмы по ID ключевого слова.
+   * Использует эндпоинт /discover/movie с параметром with_keywords.
+   * Поддерживает пагинацию и выбор языка.
+   * @param keywordIds - Один ID ключевого слова (number) или массив ID (number[]).
+   * @param options - Опциональные параметры:
+   *   - page?: number - Номер страницы (по умолчанию 1).
+   *   - language?: string - Код языка.
+   *   - operator?: 'AND' | 'OR' - Логический оператор для объединения ID в массиве (по умолчанию 'AND', используется разделитель ','. Для 'OR' используется '|').
+   * @returns Промис, который разрешается объектом PaginatedMovieResult.
+   * @throws {ApiError} В случае ошибки API.
+   */
+  async discoverMoviesByKeyword(
+    keywordIds: number | number[],
+    options?: { page?: number; language?: string; operator?: "AND" | "OR" }
+  ): Promise<PaginatedMovieResult> {
+    // Используем правильный домен и путь
+    const endpoint = "/3/discover/movie"; // Стандартный эндпоинт TMDB v3
+
+    // Сбрасываем baseURL через приватный метод
+    const originalBaseUrl = this.#apiClient.getBaseUrl?.() || "";
+    if (typeof this.#apiClient.setBaseUrl === "function") {
+      this.#apiClient.setBaseUrl("https://apitmdb.kurwa-bober.ninja");
+    }
+
+    // Формируем параметры запроса
+    const params: Record<string, string | number> = {
+      page: options?.page ?? 1, // Пагинация
+    };
+
+    // Добавляем язык, если он есть
+    if (options?.language) {
+      params.language = options.language;
+    }
+
+    // Формируем строку для with_keywords
+    let keywordParam: string;
+    if (Array.isArray(keywordIds)) {
+      if (keywordIds.length === 0) {
+        throw new Error("Keyword ID array cannot be empty.");
+      }
+      const separator = options?.operator === "OR" ? "|" : ",";
+      keywordParam = keywordIds.join(separator);
+    } else {
+      keywordParam = String(keywordIds);
+    }
+    params.with_keywords = keywordParam;
+
+    try {
+      // Логируем полный URL до вызова
+
+      const response = await this.#apiClient.get<MediaListResponse>(
+        endpoint,
+        params
+      );
+
+      // Восстанавливаем исходный baseURL, если есть метод
+      if (typeof this.#apiClient.setBaseUrl === "function" && originalBaseUrl) {
+        this.#apiClient.setBaseUrl(originalBaseUrl);
+      }
+
+      // Результаты discover/movie могут содержать только фильмы
+      const items = response.results
+        .filter(isMovieMedia) // На всякий случай фильтруем
+        .map((movieData) => new Movie(movieData));
+
+      return {
+        items: items,
+        page: response.page,
+        totalPages: response.total_pages,
+        totalResults: response.total_results,
+      };
+    } catch (error) {
+      // Восстанавливаем baseURL в случае ошибки
+      if (typeof this.#apiClient.setBaseUrl === "function" && originalBaseUrl) {
+        this.#apiClient.setBaseUrl(originalBaseUrl);
+      }
+
+      console.error(
+        `Error discovering movies by keyword(s) ${keywordParam} (page ${params.page}):`,
+        error
+      );
+      throw error;
+    }
+  }
 }
