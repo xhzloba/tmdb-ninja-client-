@@ -38,8 +38,6 @@ export function createTMDBProxyClient(
         typeof window !== "undefined"
           ? window.atob(du)
           : Buffer.from(du, "base64").toString("utf-8");
-      // Можно временно оставить лог для проверки
-      console.log(`[DEBUG] Decoded baseURL from (new) Base64: ${baseURL}`);
     } catch (e) {
       console.error(
         "Failed to decode Base64 URL, using fallback or throwing error."
