@@ -636,6 +636,100 @@ export class MediaService {
     }
   }
 
+  /**
+   * Получает список ТОЛЬКО фильмов, выходящих или вышедших в ТЕКУЩЕМ году.
+   * Автоматически определяет текущий год и использует его для фильтрации
+   * по параметру `airdate`.
+   * Использует сортировку `sort=now` согласно предоставленному URL.
+   * Поддерживает пагинацию.
+   * @param page - Номер страницы для загрузки (начиная с 1). По умолчанию 1.
+   * @returns Промис, который разрешается объектом PaginatedMovieResult.
+   * @throws {ApiError} В случае ошибки API.
+   */
+  async getCurrentYearMovies(page: number = 1): Promise<PaginatedMovieResult> {
+    const targetYear = new Date().getFullYear(); // Всегда берем текущий год
+    const endpoint = ""; // Базовый эндпоинт прокси
+    const params = {
+      cat: "movie",
+      sort: "now", // Как в примере URL
+      airdate: targetYear, // Динамический год
+      page: page,
+    };
+
+    try {
+      const response = await this.#apiClient.get<MediaListResponse>(
+        endpoint,
+        params
+      );
+
+      // Ожидаем только фильмы, так как указан cat=movie
+      const items = response.results
+        .filter(isMovieMedia) // На всякий случай проверяем тип
+        .map((movieData) => new Movie(movieData));
+
+      return {
+        items: items,
+        page: response.page,
+        totalPages: response.total_pages,
+        totalResults: response.total_results,
+      };
+    } catch (error) {
+      console.error(
+        `Error fetching movies for current year (${targetYear}, page ${page}):`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Получает список ТОЛЬКО сериалов, выходящих или вышедших в ТЕКУЩЕМ году.
+   * Автоматически определяет текущий год и использует его для фильтрации
+   * по параметру `airdate`.
+   * Использует сортировку `sort=now`.
+   * Поддерживает пагинацию.
+   * @param page - Номер страницы для загрузки (начиная с 1). По умолчанию 1.
+   * @returns Промис, который разрешается объектом PaginatedTVShowResult.
+   * @throws {ApiError} В случае ошибки API.
+   */
+  async getCurrentYearTvShows(
+    page: number = 1
+  ): Promise<PaginatedTVShowResult> {
+    const targetYear = new Date().getFullYear(); // Всегда берем текущий год
+    const endpoint = ""; // Базовый эндпоинт прокси
+    const params = {
+      cat: "tv", // Запрашиваем сериалы
+      sort: "now",
+      airdate: targetYear,
+      page: page,
+    };
+
+    try {
+      const response = await this.#apiClient.get<MediaListResponse>(
+        endpoint,
+        params
+      );
+
+      // Ожидаем только сериалы
+      const items = response.results
+        .filter(isTVShowMedia) // Проверяем тип
+        .map((tvData) => new TVShow(tvData));
+
+      return {
+        items: items,
+        page: response.page,
+        totalPages: response.total_pages,
+        totalResults: response.total_results,
+      };
+    } catch (error) {
+      console.error(
+        `Error fetching TV shows for current year (${targetYear}, page ${page}):`,
+        error
+      );
+      throw error;
+    }
+  }
+
   // Комментарий для "себя": Здесь можно добавить другие методы:
   // async searchMedia(query: string, page: number = 1): Promise<PaginatedMediaResult> { ... }
 }

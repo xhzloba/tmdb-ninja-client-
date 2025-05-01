@@ -72,14 +72,16 @@
       .then((data) => console.log("Фильмы в прокате:", data.items));
     ```
 
-- **`client.media.getNowPlayingTvShows( [page] )`**
+- **`client.media.getCurrentYearTvShows( [page] )`**
 
-  - Получает список только актуальных сериалов.
+  - Получает список **новинок** (сериалов, выходящих или вышедших в **текущем** году).
+  - Автоматически определяет текущий год для запроса (используется параметр `airdate` в API).
   - Возвращает: `Promise<PaginatedTVShowResult>` (список `TVShow`).
   - ```typescript
-    client.media
-      .getNowPlayingTvShows()
-      .then((data) => console.log("Сериалы в эфире:", data.items));
+    // Получить новинки сериалов текущего года
+    client.media.getCurrentYearTvShows().then((data) => {
+      console.log(`Сериалы ${new Date().getFullYear()} года:`, data.items);
+    });
     ```
 
 - **`client.media.getPopularMovies( [page] )`**
@@ -96,6 +98,23 @@
     ```
 
 - **`client.media.getPopularTVShows( [page] )`**
+
+- **`client.media.getCurrentYearMovies( [page] )`**
+
+  - Получает список **новинок** (фильмов, выходящих или вышедших в **текущем** году).
+  - Автоматически определяет текущий год для запроса (используется параметр `airdate` в API).
+  - Возвращает: `Promise<PaginatedMovieResult>` (список `Movie`).
+  - ```typescript
+    client.media
+      .getCurrentYearMovies()
+      .then((data) =>
+        console.log(`Фильмы ${new Date().getFullYear()} года:`, data.items)
+      );
+    // Получить вторую страницу фильмов текущего года
+    client.media
+      .getCurrentYearMovies(2)
+      .then((data) => console.log("Фильмы текущего года (стр 2):", data.items));
+    ```
 
 ## Поиск Медиа
 
