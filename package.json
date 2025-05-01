@@ -1,6 +1,6 @@
 {
   "name": "tmdb-xhzloba",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Типизированная клиентская библиотека на TypeScript для взаимодействия с прокси-API TMDB. Предоставляет классы-сущности (Movie, TVShow), методы для получения списков (Now Playing, Popular) с пагинацией и утилиты для работы с URL изображений.",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
