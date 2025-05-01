@@ -577,7 +577,6 @@ ${JSON.stringify(details, null, 2)}
           currentMethodDisplayElement.textContent = `(ID: ${keywordId})`;
 
         try {
-          // Стандартный вызов метода (теперь он использует правильный URL)
           const result = await client.media.discoverMoviesByKeyword(keywordId, {
             page: page,
             language: "ru", // Запрашиваем на русском
