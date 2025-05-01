@@ -72,7 +72,6 @@ export class ApiClient {
     if (params) {
       Object.entries(params).forEach(
         ([key, value]: [string, string | number]) => {
-          // Избегаем дублирования api_key, если он вдруг передан в params
           if (key.toLowerCase() !== "api_key") {
             url.searchParams.append(key, String(value));
           }
@@ -83,8 +82,14 @@ export class ApiClient {
     // Комментарий для "себя": Используем fetch. Можно добавить опции,
     // типа заголовков (Authorization и т.д.), если API потребует.
     try {
-      // --->>> DEBUGGING: Log the exact URL being fetched
-      console.log(`[ApiClient] Fetching URL: ${url.toString()}`);
+      // --- Улучшенный лог запроса ---
+      console.log(
+        `%c✅ Connection Successful %c| %c📦 Package: %chttps://www.npmjs.com/package/tmdb-xhzloba`,
+        "color: green; font-weight: bold;", // Стиль для "✅ Connection Successful"
+        "color: #ccc;", // Стиль для разделителя
+        "color: #CB3837; font-weight: bold;", // Стиль для "📦 Package:" (красный NPM)
+        "color: #CB3837; text-decoration: underline;" // Стиль для ссылки NPM
+      );
       // --->>> END DEBUGGING
       const response = await fetch(url.toString());
 
