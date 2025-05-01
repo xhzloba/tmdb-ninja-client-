@@ -295,6 +295,8 @@
           <option value="getLatestTvShows">
             Последние добавленные (сериалы)
           </option>
+          <option value="getCurrentYearMovies">Новинки года (фильмы)</option>
+          <option value="getCurrentYearTvShows">Новинки года (сериалы)</option>
           <option value="getNowPlayingMovies">Сейчас смотрят (фильмы)</option>
           <option value="getNowPlayingTvShows">Сейчас смотрят (сериалы)</option>
         </select>
@@ -387,163 +389,163 @@
     <!-- Закрываем .content-wrapper -->
 
     <script type="module">
-            // import {
-            //   createXhZlobaClient,
-            //   ApiError,
-            //   Movie,
-            //   TVShow,
-            // } from "../dist/index.esm.js"; // Используем локальную сборку
-            import {
-              createTMDBProxyClient,
-              ApiError,
-              Movie,
-              TVShow,
-            } from "https://unpkg.com/tmdb-xhzloba@latest/dist/index.esm.js; // Используем локальную сборку
+      // import {
+      //   createXhZlobaClient,
+      //   ApiError,
+      //   Movie,
+      //   TVShow,
+      // } from "../dist/index.esm.js"; // Используем локальную сборку
+      import {
+        createTMDBProxyClient,
+        ApiError,
+        Movie,
+        TVShow,
+      } from "https://unpkg.com/tmdb-xhzloba@latest/dist/index.esm.js";
 
-            const API_KEY = "4ef0d7355d9ffb5151e987764708ce96"; // ВАЖНО: Ключ вставлен!
-            // Убираем проверку, так как ключ теперь есть
-            // if (API_KEY === "ТУТ_ВАШ_КЛЮЧ_API") {
-            //   alert(
-            //     "Пожалуйста, замените 'ТУТ_ВАШ_КЛЮЧ_API' на ваш реальный API ключ TMDB в файле vanilla-esm-example.html"
-            //   );
-            // }
-            // Просто передаем API ключ, чтобы использовать URL по умолчанию
-            const client = createTMDBProxyClient(API_KEY);
-            client.help();
+      const API_KEY = "4ef0d7355d9ffb5151e987764708ce96"; // ВАЖНО: Ключ вставлен!
+      // Убираем проверку, так как ключ теперь есть
+      // if (API_KEY === "ТУТ_ВАШ_КЛЮЧ_API") {
+      //   alert(
+      //     "Пожалуйста, замените 'ТУТ_ВАШ_КЛЮЧ_API' на ваш реальный API ключ TMDB в файле vanilla-esm-example.html"
+      //   );
+      // }
+      // Просто передаем API ключ, чтобы использовать URL по умолчанию
+      const client = createTMDBProxyClient(API_KEY);
+      client.help();
 
-            // --- Получение элементов DOM ---
-            const mediaListElement = document.getElementById("media-list");
-            const detailsContainerElement =
-              document.getElementById("details-container");
-            const detailsContentElement = document.getElementById("details-content");
-            const detailsStatusElement = document.getElementById("details-status");
-            const detailsTitleElement = document.getElementById("details-title");
-            const toggleDetailsBtn = document.getElementById("toggle-details-btn");
-            const loadMoreBtn = document.getElementById("load-more-btn");
-            const errorMessageElement = document.getElementById("error-message");
-            const listTitleElement = document.getElementById("list-title");
-            const viewSelector = document.getElementById("view-selector");
-            const currentMethodDisplayElement = document.getElementById(
-              "current-method-display"
+      // --- Получение элементов DOM ---
+      const mediaListElement = document.getElementById("media-list");
+      const detailsContainerElement =
+        document.getElementById("details-container");
+      const detailsContentElement = document.getElementById("details-content");
+      const detailsStatusElement = document.getElementById("details-status");
+      const detailsTitleElement = document.getElementById("details-title");
+      const toggleDetailsBtn = document.getElementById("toggle-details-btn");
+      const loadMoreBtn = document.getElementById("load-more-btn");
+      const errorMessageElement = document.getElementById("error-message");
+      const listTitleElement = document.getElementById("list-title");
+      const viewSelector = document.getElementById("view-selector");
+      const currentMethodDisplayElement = document.getElementById(
+        "current-method-display"
+      );
+
+      // --- Состояние приложения ---
+      let currentPage = 1;
+      let totalPages = 1;
+      let isLoading = false;
+      let isDetailsLoading = false;
+      let mediaList = []; // Общий список для хранения загруженных Movie/TVShow объектов
+      let currentMethodName = viewSelector ? viewSelector.value : "getPopular"; // Текущий выбранный метод
+      let currentTotalResults = null; // Новое состояние для общего кол-ва
+
+      // --- Хелперы ---
+      function showDetailsStatus(message, isError = false) {
+        if (detailsStatusElement) {
+          detailsStatusElement.textContent = message;
+          detailsStatusElement.style.color = isError ? "red" : "black";
+          detailsStatusElement.style.display = "block";
+        }
+        if (detailsContentElement) {
+          detailsContentElement.classList.add("hidden");
+          detailsContentElement.innerHTML = "";
+        }
+        if (detailsTitleElement) detailsTitleElement.textContent = "Статус";
+      }
+
+      // --- Загрузка и отображение ДЕТАЛЕЙ МЕДИА (с выводом всех полей) ---
+      async function displayMediaDetails(mediaItemData) {
+        if (
+          !detailsContainerElement ||
+          !detailsContentElement ||
+          isDetailsLoading
+        )
+          return;
+
+        detailsContainerElement.style.display = "block";
+        showDetailsStatus("Загрузка деталей...");
+        isDetailsLoading = true;
+
+        try {
+          let details;
+          // Запрашиваем больше данных через appendToResponse
+          let fetchOptions = {
+            language: "ru",
+            appendToResponse: [
+              "credits",
+              "videos",
+              "images",
+              "external_ids",
+              "keywords",
+              // 'recommendations', // Пока уберем, чтобы не перегружать
+              // 'similar',
+              // 'reviews',
+              // 'watch/providers',
+            ],
+          };
+          // Добавляем специфичные для типа поля
+          if (mediaItemData instanceof Movie) {
+            fetchOptions.appendToResponse.push("release_dates");
+            details = await client.media.getMovieDetails(
+              mediaItemData.id,
+              fetchOptions
             );
+          } else if (mediaItemData instanceof TVShow) {
+            details = await client.media.getTVShowDetails(
+              mediaItemData.id,
+              fetchOptions
+            );
+          } else {
+            throw new Error("Неизвестный тип медиа элемента.");
+          }
 
-            // --- Состояние приложения ---
-            let currentPage = 1;
-            let totalPages = 1;
-            let isLoading = false;
-            let isDetailsLoading = false;
-            let mediaList = []; // Общий список для хранения загруженных Movie/TVShow объектов
-            let currentMethodName = viewSelector ? viewSelector.value : "getPopular"; // Текущий выбранный метод
-            let currentTotalResults = null; // Новое состояние для общего кол-ва
+          console.log("Получены детали:", details);
 
-            // --- Хелперы ---
-            function showDetailsStatus(message, isError = false) {
-              if (detailsStatusElement) {
-                detailsStatusElement.textContent = message;
-                detailsStatusElement.style.color = isError ? "red" : "black";
-                detailsStatusElement.style.display = "block";
-              }
-              if (detailsContentElement) {
-                detailsContentElement.classList.add("hidden");
-                detailsContentElement.innerHTML = "";
-              }
-              if (detailsTitleElement) detailsTitleElement.textContent = "Статус";
-            }
+          // Обновляем заголовок
+          if (detailsTitleElement)
+            detailsTitleElement.textContent = `Детали: ${
+              details.title || details.name
+            }`;
 
-            // --- Загрузка и отображение ДЕТАЛЕЙ МЕДИА (с выводом всех полей) ---
-            async function displayMediaDetails(mediaItemData) {
-              if (
-                !detailsContainerElement ||
-                !detailsContentElement ||
-                isDetailsLoading
-              )
-                return;
-
-              detailsContainerElement.style.display = "block";
-              showDetailsStatus("Загрузка деталей...");
-              isDetailsLoading = true;
-
-              try {
-                let details;
-                // Запрашиваем больше данных через appendToResponse
-                let fetchOptions = {
-                  language: "ru",
-                  appendToResponse: [
-                    "credits",
-                    "videos",
-                    "images",
-                    "external_ids",
-                    "keywords",
-                    // 'recommendations', // Пока уберем, чтобы не перегружать
-                    // 'similar',
-                    // 'reviews',
-                    // 'watch/providers',
-                  ],
-                };
-                // Добавляем специфичные для типа поля
-                if (mediaItemData instanceof Movie) {
-                  fetchOptions.appendToResponse.push("release_dates");
-                  details = await client.media.getMovieDetails(
-                    mediaItemData.id,
-                    fetchOptions
-                  );
-                } else if (mediaItemData instanceof TVShow) {
-                  details = await client.media.getTVShowDetails(
-                    mediaItemData.id,
-                    fetchOptions
-                  );
-                } else {
-                  throw new Error("Неизвестный тип медиа элемента.");
-                }
-
-                console.log("Получены детали:", details);
-
-                // Обновляем заголовок
-                if (detailsTitleElement)
-                  detailsTitleElement.textContent = `Детали: ${
-                    details.title || details.name
-                  }`;
-
-                // --- Возвращаем вывод всего объекта details как JSON ---
-                let detailsHtml = `<pre class="json-output">
+          // --- Возвращаем вывод всего объекта details как JSON ---
+          let detailsHtml = `<pre class="json-output">
       ${JSON.stringify(details, null, 2)}
       </pre>`;
 
-                detailsContentElement.innerHTML = detailsHtml;
-                detailsStatusElement.style.display = "none";
-                detailsContentElement.classList.remove("hidden");
-                if (toggleDetailsBtn) toggleDetailsBtn.textContent = "▲";
-              } catch (error) {
-                console.error(`Ошибка загрузки деталей:`, error);
-                let msg = "Неизвестная ошибка загрузки деталей";
-                if (error instanceof ApiError) {
-                  msg = `API Ошибка деталей (${error.statusCode}): ${
-                    error.apiMessage || error.message
-                  }`;
-                }
-                showDetailsStatus(msg, true);
-                if (detailsTitleElement) detailsTitleElement.textContent = "Ошибка";
-              } finally {
-                isDetailsLoading = false;
-              }
-            }
+          detailsContentElement.innerHTML = detailsHtml;
+          detailsStatusElement.style.display = "none";
+          detailsContentElement.classList.remove("hidden");
+          if (toggleDetailsBtn) toggleDetailsBtn.textContent = "▲";
+        } catch (error) {
+          console.error(`Ошибка загрузки деталей:`, error);
+          let msg = "Неизвестная ошибка загрузки деталей";
+          if (error instanceof ApiError) {
+            msg = `API Ошибка деталей (${error.statusCode}): ${
+              error.apiMessage || error.message
+            }`;
+          }
+          showDetailsStatus(msg, true);
+          if (detailsTitleElement) detailsTitleElement.textContent = "Ошибка";
+        } finally {
+          isDetailsLoading = false;
+        }
+      }
 
-            // --- Функция загрузки и отображения СПИСКА МЕДИА ---
-            async function fetchAndDisplay(methodName, page = 1) {
-              if (isLoading) return;
-              isLoading = true;
-              errorMessageElement.style.display = "none";
-              if (page === 1) {
-                mediaListElement.innerHTML = "";
-                mediaList = [];
-                currentPage = 1; // Сброс страницы при смене метода
-              }
-              if (loadMoreBtn) loadMoreBtn.textContent = "Загрузка...";
+      // --- Функция загрузки и отображения СПИСКА МЕДИА ---
+      async function fetchAndDisplay(methodName, page = 1) {
+        if (isLoading) return;
+        isLoading = true;
+        errorMessageElement.style.display = "none";
+        if (page === 1) {
+          mediaListElement.innerHTML = "";
+          mediaList = [];
+          currentPage = 1; // Сброс страницы при смене метода
+        }
+        if (loadMoreBtn) loadMoreBtn.textContent = "Загрузка...";
 
-              // Обновляем заголовок
-              const selectedOption = viewSelector.options[viewSelector.selectedIndex];
-              listTitleElement.firstChild.textContent = selectedOption.text + " "; // Обновляем только текст заголовка, оставляя span
-              /* --- Удаляем этот блок отсюда ---
+        // Обновляем заголовок
+        const selectedOption = viewSelector.options[viewSelector.selectedIndex];
+        listTitleElement.firstChild.textContent = selectedOption.text + " "; // Обновляем только текст заголовка, оставляя span
+        /* --- Удаляем этот блок отсюда ---
               if (currentMethodDisplayElement) {
                 let infoText = `Метод API: ${methodName}`;
                 if (currentTotalResults !== null) {
@@ -553,101 +555,101 @@
               }
               */
 
-              try {
-                let result;
-                // Динамически вызываем нужный метод клиента
-                if (typeof client.media[methodName] === "function") {
-                  console.log(`Вызов client.media.${methodName}(${page})`);
-                  result = await client.media[methodName](page);
-                } else {
-                  throw new Error(`Метод client.media.${methodName} не найден!`);
-                }
+        try {
+          let result;
+          // Динамически вызываем нужный метод клиента
+          if (typeof client.media[methodName] === "function") {
+            console.log(`Вызов client.media.${methodName}(${page})`);
+            result = await client.media[methodName](page);
+          } else {
+            throw new Error(`Метод client.media.${methodName} не найден!`);
+          }
 
-                // --- Добавим лог для всего объекта result ---
-                console.log(`Result object for ${methodName} page ${page}:`, result);
-                // -------------------------------------------
+          // --- Добавим лог для всего объекта result ---
+          console.log(`Result object for ${methodName} page ${page}:`, result);
+          // -------------------------------------------
 
-                console.log(`Loaded ${methodName} page ${page}:`, result);
-                totalPages = result.totalPages;
-                currentPage = result.page;
-                // Сохраняем общее количество только при загрузке первой страницы
-                if (page === 1) {
-                  currentTotalResults = result.totalResults ?? null;
-                }
+          console.log(`Loaded ${methodName} page ${page}:`, result);
+          totalPages = result.totalPages;
+          currentPage = result.page;
+          // Сохраняем общее количество только при загрузке первой страницы
+          if (page === 1) {
+            currentTotalResults = result.totalResults ?? null;
+          }
 
-                // --- Переносим обновление текста сюда ---
-                if (currentMethodDisplayElement) {
-                  let infoText = `Метод API: ${methodName}`;
-                  if (currentTotalResults !== null) {
-                    infoText += `, Всего: ${currentTotalResults}`;
-                  }
-                  currentMethodDisplayElement.textContent = infoText;
-                }
+          // --- Переносим обновление текста сюда ---
+          if (currentMethodDisplayElement) {
+            let infoText = `Метод API: ${methodName}`;
+            if (currentTotalResults !== null) {
+              infoText += `, Всего: ${currentTotalResults}`;
+            }
+            currentMethodDisplayElement.textContent = infoText;
+          }
+          // ---------------------------------------
+
+          // Добавляем элементы в DOM и в массив
+          if (result && result.items) {
+            result.items.forEach((item) => {
+              if (item instanceof Movie || item instanceof TVShow) {
+                // --- Добавим лог для проверки полей ---
+                console.log("Inspecting item:", item);
+                console.log(
+                  "Value of item.kinopoiskId from getter:",
+                  item.kinopoiskId
+                );
                 // ---------------------------------------
 
-                // Добавляем элементы в DOM и в массив
-                if (result && result.items) {
-                  result.items.forEach((item) => {
-                    if (item instanceof Movie || item instanceof TVShow) {
-                      // --- Добавим лог для проверки полей ---
-                      console.log("Inspecting item:", item);
-                      console.log(
-                        "Value of item.kinopoiskId from getter:",
-                        item.kinopoiskId
-                      );
-                      // ---------------------------------------
+                mediaList.push(item);
+                const li = document.createElement("li");
+                li.setAttribute("data-media-id", item.id.toString());
+                const year =
+                  item instanceof Movie
+                    ? item.releaseDate?.substring(0, 4) || "N/A"
+                    : item.firstAirDate?.substring(0, 4) || "N/A";
+                // Получаем доп. данные, если они есть (от прокси или из кэша)
+                const kpId = item.kinopoiskId ?? "N/A";
+                const imdbIdRaw = item.imdbId; // Получаем ID напрямую
+                console.log("Raw value from item.imdbId:", imdbIdRaw);
+                const imdbId = imdbIdRaw ?? "N/A"; // Используем nullish coalescing для ID
 
-                      mediaList.push(item);
-                      const li = document.createElement("li");
-                      li.setAttribute("data-media-id", item.id.toString());
-                      const year =
-                        item instanceof Movie
-                          ? item.releaseDate?.substring(0, 4) || "N/A"
-                          : item.firstAirDate?.substring(0, 4) || "N/A";
-                      // Получаем доп. данные, если они есть (от прокси или из кэша)
-                      const kpId = item.kinopoiskId ?? "N/A";
-                      const imdbIdRaw = item.imdbId; // Получаем ID напрямую
-                      console.log("Raw value from item.imdbId:", imdbIdRaw);
-                      const imdbId = imdbIdRaw ?? "N/A"; // Используем nullish coalescing для ID
+                const imdbRatingRaw = item.imdbRating; // Получаем рейтинг напрямую
+                console.log("Raw value from item.imdbRating:", imdbRatingRaw);
+                const imdbRatingNum =
+                  typeof imdbRatingRaw === "string"
+                    ? parseFloat(imdbRatingRaw)
+                    : imdbRatingRaw;
+                const imdbRating =
+                  !isNaN(imdbRatingNum) && imdbRatingNum !== null
+                    ? imdbRatingNum.toFixed(1)
+                    : "N/A";
+                // -----------------------------------------------------------------
 
-                      const imdbRatingRaw = item.imdbRating; // Получаем рейтинг напрямую
-                      console.log("Raw value from item.imdbRating:", imdbRatingRaw);
-                      const imdbRatingNum =
-                        typeof imdbRatingRaw === "string"
-                          ? parseFloat(imdbRatingRaw)
-                          : imdbRatingRaw;
-                      const imdbRating =
-                        !isNaN(imdbRatingNum) && imdbRatingNum !== null
-                          ? imdbRatingNum.toFixed(1)
-                          : "N/A";
-                      // -----------------------------------------------------------------
+                const tmdbRating = item.voteAverage?.toFixed(1) ?? "N/A";
 
-                      const tmdbRating = item.voteAverage?.toFixed(1) ?? "N/A";
+                // Преобразуем рейтинги в числа перед форматированием, если они строки
+                // --- Старая версия с геттером ---
+                // const kpRatingNum = typeof item.kinopoiskRating === 'string' ? parseFloat(item.kinopoiskRating) : item.kinopoiskRating;
+                // const kpRating = !isNaN(kpRatingNum) && kpRatingNum !== null ? kpRatingNum.toFixed(1) : 'N/A';
+                // --- Новая версия: доступ напрямую к item.kpRating ---
+                const kpRatingRaw = item.kpRating; // Получаем значение напрямую
+                console.log("Raw value from item.kpRating:", kpRatingRaw); // Логируем что получили
+                const kpRatingNum =
+                  typeof kpRatingRaw === "string"
+                    ? parseFloat(kpRatingRaw)
+                    : kpRatingRaw;
+                const kpRating =
+                  !isNaN(kpRatingNum) && kpRatingNum !== null
+                    ? kpRatingNum.toFixed(1)
+                    : "N/A";
 
-                      // Преобразуем рейтинги в числа перед форматированием, если они строки
-                      // --- Старая версия с геттером ---
-                      // const kpRatingNum = typeof item.kinopoiskRating === 'string' ? parseFloat(item.kinopoiskRating) : item.kinopoiskRating;
-                      // const kpRating = !isNaN(kpRatingNum) && kpRatingNum !== null ? kpRatingNum.toFixed(1) : 'N/A';
-                      // --- Новая версия: доступ напрямую к item.kpRating ---
-                      const kpRatingRaw = item.kpRating; // Получаем значение напрямую
-                      console.log("Raw value from item.kpRating:", kpRatingRaw); // Логируем что получили
-                      const kpRatingNum =
-                        typeof kpRatingRaw === "string"
-                          ? parseFloat(kpRatingRaw)
-                          : kpRatingRaw;
-                      const kpRating =
-                        !isNaN(kpRatingNum) && kpRatingNum !== null
-                          ? kpRatingNum.toFixed(1)
-                          : "N/A";
+                // Пытаемся получить кастомное поле releaseQuality (camelCase)
+                const releaseQuality = item.releaseQuality ?? "N/A";
 
-                      // Пытаемся получить кастомное поле releaseQuality (camelCase)
-                      const releaseQuality = item.releaseQuality ?? "N/A";
+                // Получаем описание
+                const overview = item.overview || "";
 
-                      // Получаем описание
-                      const overview = item.overview || "";
-
-                      // --- Обновленный шаблон для лучшей читаемости ---
-                      li.innerHTML = `
+                // --- Обновленный шаблон для лучшей читаемости ---
+                li.innerHTML = `
                           <img src="${item.getPosterUrl(
                             "w342"
                           )}" alt="Постер" loading="lazy">
@@ -673,90 +675,90 @@
                               <p class="media-overview">${overview}</p>
                           </div>
                       `;
-                      mediaListElement.appendChild(li);
-                    } else {
-                      console.warn("Получен элемент не Movie/TVShow:", item);
-                    }
-                  });
-                } else {
-                  console.warn("Результат API не содержит поля items:", result);
-                }
-
-                // Кнопка "Загрузить еще"
-                if (loadMoreBtn) {
-                  loadMoreBtn.style.display =
-                    currentPage < totalPages ? "block" : "none";
-                  loadMoreBtn.textContent = "Загрузить еще...";
-                }
-              } catch (error) {
-                console.error(`Ошибка при загрузке ${methodName}:`, error);
-                let msg = "Неизвестная ошибка";
-                if (error instanceof ApiError) {
-                  msg = `API Ошибка (${error.statusCode}): ${
-                    error.apiMessage || error.message
-                  }`;
-                }
-                errorMessageElement.textContent = `Не удалось загрузить данные (${methodName}). ${msg}`;
-              } finally {
-                isLoading = false;
-              }
-            }
-
-            // --- Обработчик клика на список (для показа деталей) ---
-            mediaListElement.addEventListener("click", function (event) {
-              if (event.target.closest("li")) {
-                const mediaId = event.target
-                  .closest("li")
-                  .getAttribute("data-media-id");
-                if (mediaId) {
-                  const mediaItem = mediaList.find(
-                    (item) => item.id.toString() === mediaId
-                  );
-                  if (mediaItem) {
-                    displayMediaDetails(mediaItem);
-                  }
-                }
+                mediaListElement.appendChild(li);
+              } else {
+                console.warn("Получен элемент не Movie/TVShow:", item);
               }
             });
+          } else {
+            console.warn("Результат API не содержит поля items:", result);
+          }
 
-            // --- Обработчик для кнопки "Загрузить еще" ---
-            loadMoreBtn.addEventListener("click", function () {
-              if (currentPage < totalPages) {
-                fetchAndDisplay(currentMethodName, currentPage + 1);
-              }
-            });
+          // Кнопка "Загрузить еще"
+          if (loadMoreBtn) {
+            loadMoreBtn.style.display =
+              currentPage < totalPages ? "block" : "none";
+            loadMoreBtn.textContent = "Загрузить еще...";
+          }
+        } catch (error) {
+          console.error(`Ошибка при загрузке ${methodName}:`, error);
+          let msg = "Неизвестная ошибка";
+          if (error instanceof ApiError) {
+            msg = `API Ошибка (${error.statusCode}): ${
+              error.apiMessage || error.message
+            }`;
+          }
+          errorMessageElement.textContent = `Не удалось загрузить данные (${methodName}). ${msg}`;
+        } finally {
+          isLoading = false;
+        }
+      }
 
-            // --- Обработчик для выбора метода ---
-            if (viewSelector) {
-              viewSelector.addEventListener("change", (event) => {
-                const newMethodName = event.target.value;
-                if (newMethodName !== currentMethodName && !isLoading) {
-                  console.log(`Смена вида на: ${newMethodName}`);
-                  currentMethodName = newMethodName;
-                  detailsContainerElement.style.display = "none";
-                  currentTotalResults = null; // Сбрасываем счетчик при смене вида
-                  fetchAndDisplay(currentMethodName, 1);
-                }
-              });
+      // --- Обработчик клика на список (для показа деталей) ---
+      mediaListElement.addEventListener("click", function (event) {
+        if (event.target.closest("li")) {
+          const mediaId = event.target
+            .closest("li")
+            .getAttribute("data-media-id");
+          if (mediaId) {
+            const mediaItem = mediaList.find(
+              (item) => item.id.toString() === mediaId
+            );
+            if (mediaItem) {
+              displayMediaDetails(mediaItem);
             }
+          }
+        }
+      });
 
-            // --- Обработчик для кнопки сворачивания/разворачивания деталей ---
-            if (toggleDetailsBtn) {
-              toggleDetailsBtn.addEventListener("click", () => {
-                if (detailsContentElement) {
-                  const isHidden = detailsContentElement.classList.toggle("hidden");
-                  toggleDetailsBtn.textContent = isHidden ? "▼" : "▲";
-                }
-              });
-            }
+      // --- Обработчик для кнопки "Загрузить еще" ---
+      loadMoreBtn.addEventListener("click", function () {
+        if (currentPage < totalPages) {
+          fetchAndDisplay(currentMethodName, currentPage + 1);
+        }
+      });
 
-            // --- Запуск ---
-            if (viewSelector) {
-              currentMethodName = viewSelector.value;
-              fetchAndDisplay(currentMethodName, 1);
-            } else {
-              console.error("Не найден элемент #view-selector");
-            }
+      // --- Обработчик для выбора метода ---
+      if (viewSelector) {
+        viewSelector.addEventListener("change", (event) => {
+          const newMethodName = event.target.value;
+          if (newMethodName !== currentMethodName && !isLoading) {
+            console.log(`Смена вида на: ${newMethodName}`);
+            currentMethodName = newMethodName;
+            detailsContainerElement.style.display = "none";
+            currentTotalResults = null; // Сбрасываем счетчик при смене вида
+            fetchAndDisplay(currentMethodName, 1);
+          }
+        });
+      }
+
+      // --- Обработчик для кнопки сворачивания/разворачивания деталей ---
+      if (toggleDetailsBtn) {
+        toggleDetailsBtn.addEventListener("click", () => {
+          if (detailsContentElement) {
+            const isHidden = detailsContentElement.classList.toggle("hidden");
+            toggleDetailsBtn.textContent = isHidden ? "▼" : "▲";
+          }
+        });
+      }
+
+      // --- Запуск ---
+      if (viewSelector) {
+        currentMethodName = viewSelector.value;
+        fetchAndDisplay(currentMethodName, 1);
+      } else {
+        console.error("Не найден элемент #view-selector");
+      }
     </script>
   </body>
 </html>
