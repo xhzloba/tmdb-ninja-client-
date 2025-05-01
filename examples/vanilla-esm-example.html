@@ -410,6 +410,7 @@
       // Передаем undefined первым аргументом для baseURL (чтобы взять дефолтный),
       // а API_KEY - вторым, как требует функция.
       const client = createTMDBProxyClient(undefined, API_KEY);
+      client.help();
 
       // --- Получение элементов DOM ---
       const mediaListElement = document.getElementById("media-list");

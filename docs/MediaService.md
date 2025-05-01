@@ -73,6 +73,7 @@
     ```
 
 - **`client.media.getNowPlayingTvShows( [page] )`**
+
   - Получает список только актуальных сериалов.
   - Возвращает: `Promise<PaginatedTVShowResult>` (список `TVShow`).
   - ```typescript
@@ -80,6 +81,21 @@
       .getNowPlayingTvShows()
       .then((data) => console.log("Сериалы в эфире:", data.items));
     ```
+
+- **`client.media.getPopularMovies( [page] )`**
+
+  - Получает список ТОЛЬКО популярных фильмов (сортировка 'top' в API).
+  - Возвращает: `Promise<PaginatedMovieResult>` (список `Movie`).
+  - ```typescript
+    // Получить первую страницу популярных фильмов
+    client.media
+      .getPopularMovies()
+      .then((data) => console.log("Популярные фильмы:", data.items));
+    // Получить третью страницу
+    client.media.getPopularMovies(3).then((data) => console.log(data.items));
+    ```
+
+- **`client.media.getPopularTVShows( [page] )`**
 
 ## Поиск Медиа
 
