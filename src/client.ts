@@ -9,18 +9,9 @@ declare var process: {
   };
 };
 
-// --- Обфускация Base64 URL по умолчанию (перемешанные части) ---
-const urlObfuscatedParts = [
-  "t1cndhLWJ",
-  "bmphLw==",
-  "aHR0cHM6L",
-  "vYmVyLm5p",
-  "y90bWRiLm",
-];
-const urlPartOrder = [2, 4, 0, 3, 1];
-const DEFAULT_API_URL = urlPartOrder
-  .map((index) => urlObfuscatedParts[index])
-  .join("");
+const o = ["t1cndhLWJ", "bmphLw==", "aHR0cHM6L", "vYmVyLm5p", "y90bWRiLm"];
+const u = [2, 4, 0, 3, 1];
+const du = u.map((i) => o[i]).join("");
 // -----------------------------------------------------------
 
 /**
@@ -31,7 +22,7 @@ const DEFAULT_API_URL = urlPartOrder
  * @throws {Error} Если API ключ не предоставлен.
  */
 export function createTMDBProxyClient(
-  baseURLOrApiKey: string = DEFAULT_API_URL, // Используем Base64 URL по умолчанию
+  baseURLOrApiKey: string = du,
   apiKeyOrUndefined?: string
 ) {
   let baseURL: string;
@@ -45,8 +36,8 @@ export function createTMDBProxyClient(
       // Снова добавляем декодирование
       baseURL =
         typeof window !== "undefined"
-          ? window.atob(DEFAULT_API_URL)
-          : Buffer.from(DEFAULT_API_URL, "base64").toString("utf-8");
+          ? window.atob(du)
+          : Buffer.from(du, "base64").toString("utf-8");
       // Можно временно оставить лог для проверки
       console.log(`[DEBUG] Decoded baseURL from (new) Base64: ${baseURL}`);
     } catch (e) {
