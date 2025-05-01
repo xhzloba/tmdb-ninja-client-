@@ -9,7 +9,7 @@ declare var process: {
   };
 };
 
-const DEFAULT_API_URL = "aHR0cHM6Ly90bWRiLmt1cndhLWJvYmVyLm5pbmoqLw==";
+const DEFAULT_API_URL = "aHR0cHM6Ly90bWRiLmt1cndhLWJvYmVyLm5pbmov";
 
 /**
  * Создает и конфигурирует клиент для взаимодействия с TMDB API через прокси.
