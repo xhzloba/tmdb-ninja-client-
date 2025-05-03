@@ -492,6 +492,89 @@ export class MediaService {
   }
 
   /**
+   * Получает список ТОЛЬКО последних добавленных сериалов В ВЫСОКОМ КАЧЕСТВЕ.
+   * Использует параметры: cat=tv, sort=latest и параметр для высокого качества.
+   * @param page Номер страницы для пагинации (по умолчанию 1).
+   * @returns Промис с пагинированным списком ТОЛЬКО сериалов (PaginatedTVShowResult).
+   * @throws {ApiError} В случае ошибки API.
+   */
+  async getLatestHighQualityTVShows(
+    page: number = 1
+  ): Promise<PaginatedTVShowResult> {
+    const endpoint = "";
+    const params = {
+      cat: "tv",
+      sort: "latest",
+      page: page,
+    };
+
+    try {
+      const response = await this.#apiClient.get<MediaListResponse>(
+        endpoint,
+        params
+      );
+      const items = response.results
+        .filter(isTVShowMedia)
+        .map((tvData) => new TVShow(tvData));
+
+      return {
+        items: items,
+        page: response.page,
+        totalPages: response.total_pages,
+        totalResults: response.total_results,
+      };
+    } catch (error) {
+      console.error(
+        `Error fetching latest high quality TV shows (page ${page}):`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Получает список ТОЛЬКО последних добавленных ФИЛЬМОВ В ВЫСОКОМ КАЧЕСТВЕ (4K).
+   * Использует параметры: cat=movie, sort=latest и параметр для высокого качества.
+   * @param page Номер страницы для пагинации (по умолчанию 1).
+   * @returns Промис с пагинированным списком ТОЛЬКО фильмов (PaginatedMovieResult).
+   * @throws {ApiError} В случае ошибки API.
+   */
+  async getLatestHighQualityMovies(
+    page: number = 1
+  ): Promise<PaginatedMovieResult> {
+    const endpoint = "";
+    const params = {
+      cat: "movie",
+      sort: "latest",
+      uhd: "true", // Используем параметр 'uhd' для высокого качества
+      page: page,
+    };
+
+    try {
+      const response = await this.#apiClient.get<MediaListResponse>(
+        endpoint,
+        params
+      );
+      const items = response.results
+        .filter(isMovieMedia) // Фильтруем только фильмы
+        .map((movieData) => new Movie(movieData)); // Создаем экземпляры Movie
+
+      return {
+        items: items,
+        page: response.page,
+        totalPages: response.total_pages,
+        totalResults: response.total_results,
+      };
+    } catch (error) {
+      console.error(
+        `Error fetching latest high quality movies (page ${page}):`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Ищет фильмы по текстовому запросу.
    * Поддерживает пагинацию.
    * @param query - Поисковый запрос.

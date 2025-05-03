@@ -52,6 +52,19 @@
       .then((data) => console.log("Последние сериалы:", data.items));
     ```
 
+- **`client.media.getLatestHighQualityTVShows( [page] )`**
+
+  - Получает список только последних добавленных сериалов **в высоком качестве**.
+  - Возвращает: `Promise<PaginatedTVShowResult>` (список `TVShow`).
+  - ```typescript
+    // Получить первую страницу сериалов в высоком качестве
+    client.media
+      .getLatestHighQualityTVShows()
+      .then((data) =>
+        console.log("Последние сериалы в высоком качестве:", data.items)
+      );
+    ```
+
 - **`client.media.getNowPlaying( [page] )`**
 
   - Получает список актуальных медиа (в прокате/эфире).
@@ -539,3 +552,14 @@
   - `screened_theatrically`: Информация о показах сериала в кинотеатрах (если были).
 
 **Примечание:** Доступность и полнота данных для каждого значения `appendToResponse`
+
+- **`client.media.getLatestHighQualityMovies( [page] )`**
+
+  - Получает список только последних добавленных фильмов **в высоком качестве (4K)**.
+  - Возвращает: `Promise<PaginatedMovieResult>` (список `Movie`).
+  - ```typescript
+    // Получить первую страницу фильмов в 4K
+    client.media
+      .getLatestHighQualityMovies()
+      .then((data) => console.log("Последние 4K фильмы:", data.items));
+    ```
