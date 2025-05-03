@@ -563,3 +563,16 @@
       .getLatestHighQualityMovies()
       .then((data) => console.log("Последние 4K фильмы:", data.items));
     ```
+
+- **`client.media.getLatestHighQuality( [page] )`**
+
+  - Получает смешанный список последних добавленных фильмов и сериалов **в высоком качестве (4K)**.
+  - Возвращает: `Promise<PaginatedMediaResult>` (смешанный список `Movie | TVShow`).
+  - ```typescript
+    // Получить первую страницу новинок в 4K
+    client.media
+      .getLatestHighQuality()
+      .then((data) =>
+        console.log("Последние 4K новинки (фильмы и сериалы):", data.items)
+      );
+    ```

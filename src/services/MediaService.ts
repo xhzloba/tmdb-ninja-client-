@@ -863,4 +863,43 @@ export class MediaService {
       throw error;
     }
   }
+
+  /**
+   * Получает СМЕШАННЫЙ список последних добавленных ФИЛЬМОВ И СЕРИАЛОВ В ВЫСОКОМ КАЧЕСТВЕ (4K).
+   * Использует параметры: sort=latest и параметр для высокого качества (uhd=true).
+   * @param page Номер страницы для пагинации (по умолчанию 1).
+   * @returns Промис с пагинированным списком ФИЛЬМОВ и СЕРИАЛОВ (PaginatedMediaResult).
+   * @throws {ApiError} В случае ошибки API.
+   */
+  async getLatestHighQuality(page: number = 1): Promise<PaginatedMediaResult> {
+    const endpoint = "";
+    const params = {
+      sort: "latest",
+      uhd: "true", // Используем параметр 'uhd' для высокого качества
+      page: page,
+    };
+
+    try {
+      const response = await this.#apiClient.get<MediaListResponse>(
+        endpoint,
+        params
+      );
+      const items = response.results
+        .map(this.#createMediaItem) // Используем фабричный метод для смешанных результатов
+        .filter((item): item is Movie | TVShow => item !== null); // Фильтруем null значения
+
+      return {
+        items: items,
+        page: response.page,
+        totalPages: response.total_pages,
+        totalResults: response.total_results,
+      };
+    } catch (error) {
+      console.error(
+        `Error fetching latest high quality mixed media (page ${page}):`,
+        error
+      );
+      throw error;
+    }
+  }
 }
