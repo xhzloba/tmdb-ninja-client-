@@ -65,6 +65,30 @@
       );
     ```
 
+    - **`client.media.getLatestHighQualityMovies( [page] )`**
+
+  - Получает список только последних добавленных фильмов **в высоком качестве (4K)**.
+  - Возвращает: `Promise<PaginatedMovieResult>` (список `Movie`).
+  - ```typescript
+    // Получить первую страницу фильмов в 4K
+    client.media
+      .getLatestHighQualityMovies()
+      .then((data) => console.log("Последние 4K фильмы:", data.items));
+    ```
+
+- **`client.media.getLatestHighQuality( [page] )`**
+
+  - Получает смешанный список последних добавленных фильмов и сериалов **в высоком качестве (4K)**.
+  - Возвращает: `Promise<PaginatedMediaResult>` (смешанный список `Movie | TVShow`).
+  - ```typescript
+    // Получить первую страницу новинок в 4K
+    client.media
+      .getLatestHighQuality()
+      .then((data) =>
+        console.log("Последние 4K новинки (фильмы и сериалы):", data.items)
+      );
+    ```
+
 - **`client.media.getNowPlaying( [page] )`**
 
   - Получает список актуальных медиа (в прокате/эфире).
@@ -552,27 +576,3 @@
   - `screened_theatrically`: Информация о показах сериала в кинотеатрах (если были).
 
 **Примечание:** Доступность и полнота данных для каждого значения `appendToResponse`
-
-- **`client.media.getLatestHighQualityMovies( [page] )`**
-
-  - Получает список только последних добавленных фильмов **в высоком качестве (4K)**.
-  - Возвращает: `Promise<PaginatedMovieResult>` (список `Movie`).
-  - ```typescript
-    // Получить первую страницу фильмов в 4K
-    client.media
-      .getLatestHighQualityMovies()
-      .then((data) => console.log("Последние 4K фильмы:", data.items));
-    ```
-
-- **`client.media.getLatestHighQuality( [page] )`**
-
-  - Получает смешанный список последних добавленных фильмов и сериалов **в высоком качестве (4K)**.
-  - Возвращает: `Promise<PaginatedMediaResult>` (смешанный список `Movie | TVShow`).
-  - ```typescript
-    // Получить первую страницу новинок в 4K
-    client.media
-      .getLatestHighQuality()
-      .then((data) =>
-        console.log("Последние 4K новинки (фильмы и сериалы):", data.items)
-      );
-    ```
